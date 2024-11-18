@@ -32,4 +32,5 @@ flutter:
     - assets/images/icon/
     - assets/images/profile/
     - assets/images/start/
+    - assets/images/trash/
     - lib/data/user/user_data.json

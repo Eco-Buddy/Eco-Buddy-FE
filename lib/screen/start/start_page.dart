@@ -78,7 +78,7 @@ class _StartPageState extends State<StartPage> {
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.purple, // 텍스트 색상
+                  color: Colors.black, // 텍스트 색상
                   letterSpacing: 1.5,
                 ),
               ),

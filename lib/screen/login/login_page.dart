@@ -54,7 +54,7 @@ class _LoginPageState extends State<LoginPage> {
                     const Text(
                       'ECO Buddy',
                       style: TextStyle(
-                        fontSize: 28,
+                        fontSize: 32,
                         fontWeight: FontWeight.bold,
                         color: Colors.green,
                       ),

@@ -22,8 +22,14 @@ class _MenuPageState extends State<MenuPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('메뉴'),
-        backgroundColor: Colors.green,
+        title: const Text(
+          '메뉴',
+          style: TextStyle(
+            fontWeight: FontWeight.bold, // Bold 적용
+            color: Colors.white, // 하얀색 글자
+          ),
+        ),
+        backgroundColor: Colors.green[400],
       ),
       body: FutureBuilder<UserModel>(
         future: user,
@@ -111,6 +117,15 @@ class _MenuPageState extends State<MenuPage> {
                       Navigator.pushNamed(context, '/login');
                     },
                   ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.lightbulb,
+                    title: '쓰레기 생성',
+                    subtitle: '미션 생성을 위한 쓰레기 생성',
+                    onTap: () {
+                      Navigator.pushNamed(context, '/makeTrash');
+                    },
+                  ),
                 ],
               ),
             ],
@@ -136,7 +151,7 @@ class _MenuPageState extends State<MenuPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '닉네임: ${user.nickname}',
+                  '${user.nickname}',
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 Text('레벨: ${user.level}', style: const TextStyle(fontSize: 16)),
@@ -179,7 +194,13 @@ class _MenuPageState extends State<MenuPage> {
     return Card(
       child: ListTile(
         leading: Icon(icon, color: Colors.green, size: 36),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold, // Bold 적용
+            color: Colors.black, // 하얀색 적용하려면 여기 수정
+          ),
+        ),
         subtitle: Text(subtitle),
         onTap: onTap,
       ),
