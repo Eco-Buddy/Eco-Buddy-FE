@@ -37,8 +37,12 @@ class _DataUsagePageState extends State<DataUsagePage>
       setState(() {});
     });
 
-    getDailyDataUsage();
-    getHourlyDataUsage();
+    _fetchData();
+  }
+
+  Future<void> _fetchData() async {
+    await getDailyDataUsage();
+    await getHourlyDataUsage();
   }
 
   @override
@@ -125,315 +129,376 @@ class _DataUsagePageState extends State<DataUsagePage>
     }
 
     return Scaffold(
-      // appBar: AppBar(title: const Text('Network Usage')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: dailyUsageData.isEmpty &&
-                hourlyUsageData.isEmpty &&
-                message.isEmpty
-            ? const Center(child: CircularProgressIndicator())
-            : ListView(
-                children: [
-                  Text(
-                    "${DateFormat('MM/dd').format(DateTime.now())} 탄소 발자국",
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                  if (dailyUsageData.isNotEmpty) ...[
-                    Container(
-                      margin: const EdgeInsets.symmetric(vertical: 20),
-                      alignment: Alignment.center,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Image.asset(
-                            'assets/design1.png',
-                            width: 259,
-                            height: 259,
-                            fit: BoxFit.contain,
-                          ),
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
+      extendBodyBehindAppBar: true,
+      body: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: dailyUsageData.isEmpty &&
+                    hourlyUsageData.isEmpty &&
+                    message.isEmpty
+                ? const Center(child: CircularProgressIndicator())
+                : ListView(
+                    children: [
+                      Text(
+                        "${DateFormat('MM/dd').format(DateTime.now())} 탄소 발자국",
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      if (dailyUsageData.isNotEmpty) ...[
+                        Container(
+                          margin: const EdgeInsets.symmetric(vertical: 20),
+                          alignment: Alignment.center,
+                          child: Stack(
+                            alignment: Alignment.center,
                             children: [
-                              const SizedBox(height: 20),
                               Image.asset(
-                                'assets/digital_CO2.png',
-                                width: 60,
-                                height: 60,
+                                'assets/design1.png',
+                                width: 259,
+                                height: 259,
+                                fit: BoxFit.contain,
                               ),
-                              const SizedBox(height: 10),
-                              const Text(
-                                "Total",
-                                style: TextStyle(
-                                  fontSize: 25,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              Text(
-                                formatCarbonFootprint(todayTotalCarbonFootprint),
-                                style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black,
-                                ),
+                              Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const SizedBox(height: 20),
+                                  Image.asset(
+                                    'assets/digital_CO2.png',
+                                    width: 60,
+                                    height: 60,
+                                  ),
+                                  const SizedBox(height: 10),
+                                  const Text(
+                                    "Total",
+                                    style: TextStyle(
+                                      fontSize: 25,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  Text(
+                                    formatCarbonFootprint(
+                                        todayTotalCarbonFootprint),
+                                    style: const TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
+                        ),
 
-                    // 가로 배치
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        // Mobile Data
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
-                            margin: const EdgeInsets.only(right: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.transparent,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: Colors.green,
-                                width: 1,
-                              ),
-                            ),
-                            child: Column(
-                              children: [
-                                const Icon(Icons.signal_cellular_alt, color: Colors.green, size: 36),
-                                const SizedBox(height: 10),
-                                Text(
-                                  formatCarbonFootprint(todayMobileCarbonFootprint),
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
+                        // 가로 배치
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            // Mobile Data
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                margin: const EdgeInsets.only(right: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.transparent,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
                                     color: Colors.green,
+                                    width: 1,
                                   ),
                                 ),
-                                const Text(
-                                  'Mobile Data',
-                                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                                child: Column(
+                                  children: [
+                                    const Icon(Icons.signal_cellular_alt,
+                                        color: Colors.green, size: 36),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      formatCarbonFootprint(
+                                          todayMobileCarbonFootprint),
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.green,
+                                      ),
+                                    ),
+                                    const Text(
+                                      'Mobile Data',
+                                      style: TextStyle(
+                                          fontSize: 14, color: Colors.black87),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        // Wi-Fi
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
-                            margin: const EdgeInsets.only(left: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.transparent,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: Colors.blue,
-                                width: 1,
                               ),
                             ),
-                            child: Column(
-                              children: [
-                                const Icon(Icons.wifi, color: Colors.blue, size: 36),
-                                const SizedBox(height: 10),
-                                Text(
-                                  formatCarbonFootprint(todayWifiCarbonFootprint),
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
+                            // Wi-Fi
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                margin: const EdgeInsets.only(left: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.transparent,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
                                     color: Colors.blue,
+                                    width: 1,
                                   ),
                                 ),
-                                const Text(
-                                  'Wi-Fi',
-                                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                                child: Column(
+                                  children: [
+                                    const Icon(Icons.wifi,
+                                        color: Colors.blue, size: 36),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      formatCarbonFootprint(
+                                          todayWifiCarbonFootprint),
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                    const Text(
+                                      'Wi-Fi',
+                                      style: TextStyle(
+                                          fontSize: 14, color: Colors.black87),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-
-                  ],
-                  if (dailyUsageData.isNotEmpty) ...[
-                    // 구분선
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 20),
-                      child: Divider(
-                        color: Colors.green,
-                        thickness: 2,
-                        indent: 16,
-                        endIndent: 16,
-                      ),
-                    ),
-
-                    const Text('일일 탄소 발자국 :',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 18)),
-                    const SizedBox(height: 10),
-
-                    // 차트 부분
-                    Table(
-                      border: TableBorder(
-                        horizontalInside: BorderSide(color: Colors.grey.shade300, width: 0.5),
-                      ),
-                      columnWidths: const {
-                        0: FlexColumnWidth(1.2), // Reduced Date column width
-                        1: FlexColumnWidth(1.2), // Reduced Total column width
-                        2: FlexColumnWidth(1),   // Mobile icon column
-                        3: FlexColumnWidth(1),   // Wi-Fi icon column
-                      },
-                      children: [
-                        // 테이블 헤더
-                        TableRow(
-                          decoration: BoxDecoration(color: Colors.grey.shade200),
-                          children: const [
-                            Padding(
-                              padding: EdgeInsets.all(6), // Slightly smaller padding
-                              child: Text(
-                                'Date',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black),
-                                textAlign: TextAlign.center,
                               ),
-                            ),
-                            Padding(
-                              padding: EdgeInsets.all(6),
-                              child: Text(
-                                'Total',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                            Padding(
-                              padding: EdgeInsets.all(6),
-                              child: Icon(Icons.signal_cellular_alt, size: 16, color: Colors.green),
-                            ),
-                            Padding(
-                              padding: EdgeInsets.all(6),
-                              child: Icon(Icons.wifi, size: 16, color: Colors.blue),
                             ),
                           ],
                         ),
-                        // 데이터
-                        for (var date in dailyUsageData.keys) ...[
-                          TableRow(
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.5),
+                      ],
+                      if (dailyUsageData.isNotEmpty) ...[
+                        // 구분선
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: Divider(
+                            color: Colors.green,
+                            thickness: 2,
+                            indent: 16,
+                            endIndent: 16,
+                          ),
+                        ),
+
+                        const Text('일일 탄소 발자국 :',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 18)),
+                        const SizedBox(height: 10),
+
+                        // 차트 부분
+                        Table(
+                          border: TableBorder(
+                            horizontalInside: BorderSide(
+                                color: Colors.grey.shade300, width: 0.5),
+                          ),
+                          columnWidths: const {
+                            0: FlexColumnWidth(
+                                1.2), // Reduced Date column width
+                            1: FlexColumnWidth(
+                                1.2), // Reduced Total column width
+                            2: FlexColumnWidth(1), // Mobile icon column
+                            3: FlexColumnWidth(1), // Wi-Fi icon column
+                          },
+                          children: [
+                            // 테이블 헤더
+                            TableRow(
+                              decoration:
+                                  BoxDecoration(color: Colors.grey.shade200),
+                              children: const [
+                                Padding(
+                                  padding: EdgeInsets.all(6),
+                                  // Slightly smaller padding
+                                  child: Text(
+                                    'Date',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                        color: Colors.black),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                                Padding(
+                                  padding: EdgeInsets.all(6),
+                                  child: Text(
+                                    'Total',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                        color: Colors.black),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                                Padding(
+                                  padding: EdgeInsets.all(6),
+                                  child: Icon(Icons.signal_cellular_alt,
+                                      size: 16, color: Colors.green),
+                                ),
+                                Padding(
+                                  padding: EdgeInsets.all(6),
+                                  child: Icon(Icons.wifi,
+                                      size: 16, color: Colors.blue),
+                                ),
+                              ],
                             ),
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.all(6),
-                                child: Text(
-                                  date.substring(5),
-                                  style: const TextStyle(fontSize: 12, color: Colors.black),
-                                  textAlign: TextAlign.center,
+                            // 데이터
+                            for (var date in dailyUsageData.keys) ...[
+                              TableRow(
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.5),
                                 ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.all(6),
-                                child: Text(
-                                  formatCarbonFootprint(
-                                    ((dailyUsageData[date]['MobileReceivedMB'] ?? 0).toDouble() +
-                                        (dailyUsageData[date]['MobileTransmittedMB'] ?? 0).toDouble()) *
-                                        11 +
-                                        ((dailyUsageData[date]['WiFiReceivedMB'] ?? 0).toDouble() +
-                                            (dailyUsageData[date]['WiFiTransmittedMB'] ?? 0).toDouble()) *
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.all(6),
+                                    child: Text(
+                                      date.substring(5),
+                                      style: const TextStyle(
+                                          fontSize: 12, color: Colors.black),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(6),
+                                    child: Text(
+                                      formatCarbonFootprint(
+                                        ((dailyUsageData[date]['MobileReceivedMB'] ??
+                                                            0)
+                                                        .toDouble() +
+                                                    (dailyUsageData[date][
+                                                                'MobileTransmittedMB'] ??
+                                                            0)
+                                                        .toDouble()) *
+                                                11 +
+                                            ((dailyUsageData[date][
+                                                                'WiFiReceivedMB'] ??
+                                                            0)
+                                                        .toDouble() +
+                                                    (dailyUsageData[date][
+                                                                'WiFiTransmittedMB'] ??
+                                                            0)
+                                                        .toDouble()) *
+                                                8.6,
+                                      ),
+                                      style: const TextStyle(
+                                          fontSize: 12, color: Colors.black),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(6),
+                                    child: Text(
+                                      formatCarbonFootprint(
+                                        ((dailyUsageData[date][
+                                                            'MobileReceivedMB'] ??
+                                                        0)
+                                                    .toDouble() +
+                                                (dailyUsageData[date][
+                                                            'MobileTransmittedMB'] ??
+                                                        0)
+                                                    .toDouble()) *
+                                            11,
+                                      ),
+                                      style: const TextStyle(
+                                          fontSize: 12, color: Colors.green),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(6),
+                                    child: Text(
+                                      formatCarbonFootprint(
+                                        ((dailyUsageData[date][
+                                                            'WiFiReceivedMB'] ??
+                                                        0)
+                                                    .toDouble() +
+                                                (dailyUsageData[date][
+                                                            'WiFiTransmittedMB'] ??
+                                                        0)
+                                                    .toDouble()) *
                                             8.6,
+                                      ),
+                                      style: const TextStyle(
+                                          fontSize: 12, color: Colors.blue),
+                                      textAlign: TextAlign.center,
+                                    ),
                                   ),
-                                  style: const TextStyle(fontSize: 12, color: Colors.black),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.all(6),
-                                child: Text(
-                                  formatCarbonFootprint(
-                                    ((dailyUsageData[date]['MobileReceivedMB'] ?? 0).toDouble() +
-                                        (dailyUsageData[date]['MobileTransmittedMB'] ?? 0).toDouble()) *
-                                        11,
-                                  ),
-                                  style: const TextStyle(fontSize: 12, color: Colors.green),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.all(6),
-                                child: Text(
-                                  formatCarbonFootprint(
-                                    ((dailyUsageData[date]['WiFiReceivedMB'] ?? 0).toDouble() +
-                                        (dailyUsageData[date]['WiFiTransmittedMB'] ?? 0).toDouble()) *
-                                        8.6,
-                                  ),
-                                  style: const TextStyle(fontSize: 12, color: Colors.blue),
-                                  textAlign: TextAlign.center,
-                                ),
+                                ],
                               ),
                             ],
-                          ),
-                        ],
-                      ],
-                    ),
-                  ],
-                  if (hourlyUsageData.isNotEmpty) ...[
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 20),
-                      child: Divider(
-                        color: Colors.green,
-                        thickness: 2,
-                        indent: 16,
-                        endIndent: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    const Text('시간별 탄소 발자국 :',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 18)),
-                    const SizedBox(height: 10),
-                    VisibilityDetector(
-                      key: const Key('LineChartVisibilityDetector'),
-                      onVisibilityChanged: (info) {
-                        if (info.visibleFraction > 0.5 &&
-                            !_isChartVisible &&
-                            hourlyUsageData.isNotEmpty) {
-                          setState(() {
-                            _isChartVisible = true;
-                          });
-                          _animationController.reset();
-                          _animationController.forward(from: 0.0);
-                        } else if (info.visibleFraction <= 0.5 &&
-                            _isChartVisible) {
-                          setState(() {
-                            _isChartVisible = false;
-                          });
-                          _animationController.reverse();
-                        }
-                      },
-                      child: SizedBox(
-                        height: 200,
-                        child: DataUsageChart(
-                          hourlyUsageData: hourlyUsageData,
-                          animationValue: _animation.value,
+                          ],
                         ),
+                      ],
+                      if (hourlyUsageData.isNotEmpty) ...[
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: Divider(
+                            color: Colors.green,
+                            thickness: 2,
+                            indent: 16,
+                            endIndent: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        const Text('시간별 탄소 발자국 :',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 18)),
+                        const SizedBox(height: 10),
+                        VisibilityDetector(
+                          key: const Key('LineChartVisibilityDetector'),
+                          onVisibilityChanged: (info) {
+                            if (info.visibleFraction > 0.5 &&
+                                !_isChartVisible &&
+                                hourlyUsageData.isNotEmpty) {
+                              setState(() {
+                                _isChartVisible = true;
+                              });
+                              _animationController.reset();
+                              _animationController.forward(from: 0.0);
+                            } else if (info.visibleFraction <= 0.5 &&
+                                _isChartVisible) {
+                              setState(() {
+                                _isChartVisible = false;
+                              });
+                              _animationController.reverse();
+                            }
+                          },
+                          child: SizedBox(
+                            height: 200,
+                            child: DataUsageChart(
+                              hourlyUsageData: hourlyUsageData,
+                              animationValue: _animation.value,
+                            ),
+                          ),
+                        ),
+                      ],
+                      if (message.isNotEmpty) Text(message),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: resetPreferences,
+                        child: const Text("Reset Preferences"),
                       ),
-                    ),
-                  ],
-                  if (message.isNotEmpty) Text(message),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: resetPreferences,
-                    child: const Text("Reset Preferences"),
+                    ],
                   ),
-                ],
-              ),
+          ),
+          Positioned(
+            top: 16,
+            right: 16,
+            child: FloatingActionButton(
+              onPressed: () async {
+                await _fetchData();
+              },
+              backgroundColor: Colors.green,
+              mini: true,
+              tooltip: 'Refresh Data',
+              // Smaller button for a cleaner look
+              child: const Icon(Icons.refresh, color: Colors.white),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -449,4 +514,3 @@ String formatCarbonFootprint(double value) {
     return '${value.toStringAsFixed(2)} g'; // Keep in grams
   }
 }
-
