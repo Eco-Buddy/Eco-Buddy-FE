@@ -3,13 +3,10 @@ import 'package:flutter/services.dart';
 import '../model/user_model.dart';
 
 class UserRepository {
+  // 사용자 정보를 JSON에서 읽어오는 메서드
   Future<UserModel> getUserData() async {
-    try {
-      final String jsonString = await rootBundle.loadString('lib/data/user/user_data.json');
-      final Map<String, dynamic> json = jsonDecode(jsonString);
-      return UserModel.fromJson(json);
-    } catch (e) {
-      throw Exception('사용자 데이터를 불러오는데 실패했습니다: $e');
-    }
+    final String jsonString = await rootBundle.loadString('assets/data/user/user_data.json');
+    final Map<String, dynamic> json = jsonDecode(jsonString);
+    return UserModel.fromJson(json);
   }
 }

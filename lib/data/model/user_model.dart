@@ -11,15 +11,17 @@ class UserModel {
     required this.profileImage,
   });
 
+  // JSON 데이터를 UserModel로 변환
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      nickname: json['nickname'] ?? '알 수 없음',
-      level: json['level'] ?? 0,
-      title: json['title'] ?? '알 수 없음',
-      profileImage: json['profile_image'] ?? 'assets/images/profile/default.png',
+      nickname: json['nickname'],
+      level: json['level'],
+      title: json['title'],
+      profileImage: json['profile_image'],
     );
   }
 
+  // UserModel을 JSON으로 변환
   Map<String, dynamic> toJson() {
     return {
       'nickname': nickname,
