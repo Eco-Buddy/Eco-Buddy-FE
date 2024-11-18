@@ -1,9 +1,4 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:webview_flutter/webview_flutter.dart'; // Android용 WebView
-import 'package:webview_windows/webview_windows.dart'; // Windows용 WebView
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -13,112 +8,24 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  late WebViewController _androidWebViewController;
-  final WebviewController _windowsWebViewController = WebviewController();
-
+  // 현재 UI 상태 변수 (웹뷰 사용 여부 등)
   bool _isWebViewVisible = false;
 
-  // API URLs
-  final String naverServerUrl = 'http://223.130.162.100:4525/login/request/naver';
-  final String kakaoServerUrl = 'http://223.130.162.100:4525/login/request/kakao';
-
-  String? naverUserId;
-  String? kakaoUserId;
-
-  @override
-  void initState() {
-    super.initState();
-    if (Platform.isWindows) {
-      _initializeWindowsWebView();
-    } else if (Platform.isAndroid) {
-      _androidWebViewController = WebViewController()
-        ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..setNavigationDelegate(
-          NavigationDelegate(
-            onNavigationRequest: (NavigationRequest request) {
-              if (request.url.startsWith(
-                  "http://223.130.162.100:4525/login/oauth2/code/naver")) {
-                _handleRedirectUri(request.url, isNaver: true);
-                return NavigationDecision.prevent;
-              } else if (request.url.startsWith(
-                  "http://223.130.162.100:4525/login/oauth2/code/kakao")) {
-                _handleRedirectUri(request.url, isNaver: false);
-                return NavigationDecision.prevent;
-              }
-              return NavigationDecision.navigate;
-            },
-          ),
-        );
-    }
-  }
-
-  Future<void> _initializeWindowsWebView() async {
-    try {
-      await _windowsWebViewController.initialize();
-      print('Windows WebView initialized successfully');
-    } catch (e) {
-      print('Failed to initialize Windows WebView: $e');
-    }
-  }
-
-  void _loadNaverLoginPage() async {
-    setState(() {
-      _isWebViewVisible = true;
-    });
-
-    final response = await http.get(Uri.parse(naverServerUrl));
-    if (response.statusCode == 200) {
-      String naverLoginUrl = response.body;
-      if (Platform.isAndroid) {
-        _androidWebViewController.loadRequest(Uri.parse(naverLoginUrl));
-      } else if (Platform.isWindows) {
-        await _windowsWebViewController.loadUrl(naverLoginUrl);
-      }
-    } else {
-      print('네이버 로그인 URL 로딩 실패');
-    }
-  }
-
-  void _loadKakaoLoginPage() async {
-    setState(() {
-      _isWebViewVisible = true;
-    });
-
-    final response = await http.get(Uri.parse(kakaoServerUrl));
-    if (response.statusCode == 200) {
-      String kakaoLoginUrl = response.body;
-      if (Platform.isAndroid) {
-        _androidWebViewController.loadRequest(Uri.parse(kakaoLoginUrl));
-      } else if (Platform.isWindows) {
-        await _windowsWebViewController.loadUrl(kakaoLoginUrl);
-      }
-    } else {
-      print('카카오 로그인 URL 로딩 실패');
-    }
-  }
-
-  void _handleRedirectUri(String url, {required bool isNaver}) async {
+  // 카카오 로그인 버튼 클릭 시 처리
+  void _loadKakaoLoginPage() {
     setState(() {
       _isWebViewVisible = false;
     });
+    // 메인 페이지로 이동
+    Navigator.pushReplacementNamed(context, '/main');
+  }
 
-    final response = await http.post(Uri.parse(url));
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-
-      setState(() {
-        if (isNaver) {
-          naverUserId = data['id'];
-        } else {
-          kakaoUserId = data['id'];
-        }
-      });
-
-      print('User ID: ${isNaver ? naverUserId : kakaoUserId}');
-    } else {
-      print('로그인 완료 후 토큰 데이터 요청 실패');
-    }
-
+  // 네이버 로그인 버튼 클릭 시 처리
+  void _loadNaverLoginPage() {
+    setState(() {
+      _isWebViewVisible = false;
+    });
+    // 메인 페이지로 이동
     Navigator.pushReplacementNamed(context, '/main');
   }
 
@@ -154,12 +61,12 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '디지털 탄소 발자국을 줄여보세요!',
+                      '디지털 탄소 발자국을 줄이는 여정을 시작하세요!',
                       style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                     ),
                     const SizedBox(height: 40),
                     ElevatedButton.icon(
-                      onPressed: _loadKakaoLoginPage,
+                      onPressed: _loadKakaoLoginPage, // 버튼 클릭 시 처리
                       icon: Image.asset(
                         'assets/images/icon/kakao_icon.png',
                         width: 24,
@@ -180,7 +87,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
-                      onPressed: _loadNaverLoginPage,
+                      onPressed: _loadNaverLoginPage, // 버튼 클릭 시 처리
                       icon: Image.asset(
                         'assets/images/icon/naver_icon.png',
                         width: 24,
@@ -204,15 +111,14 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
             if (_isWebViewVisible)
-              Platform.isAndroid
-                  ? WebViewWidget(controller: _androidWebViewController)
-                  : Platform.isWindows
-                  ? SizedBox(
+              Container(
                 width: double.infinity,
                 height: double.infinity,
-                child: Webview(_windowsWebViewController), // 수정된 부분
-              )
-                  : Container(),
+                color: Colors.black.withOpacity(0.7), // 웹뷰가 보여질 때의 배경 색상
+                child: const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              ),
           ],
         ),
       ),
