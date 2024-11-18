@@ -54,6 +54,12 @@ class _MenuPageState extends State<MenuPage> {
                       Navigator.pushNamed(context, '/settings');
                     },
                   ),
+                ],
+              ),
+              const SizedBox(height: 16.0),
+              _buildMenuSection(
+                title: '환경 꿀팁',
+                items: [
                   _buildMenuItem(
                     context,
                     icon: Icons.info,
@@ -63,21 +69,6 @@ class _MenuPageState extends State<MenuPage> {
                       Navigator.pushNamed(context, '/about');
                     },
                   ),
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.exit_to_app,
-                    title: '로그아웃',
-                    subtitle: '현재 계정에서 로그아웃',
-                    onTap: () {
-                      Navigator.pushNamed(context, '/login');
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16.0),
-              _buildMenuSection(
-                title: '환경 꿀팁',
-                items: [
                   _buildMenuItem(
                     context,
                     icon: Icons.lightbulb,
@@ -104,20 +95,20 @@ class _MenuPageState extends State<MenuPage> {
                   ),
                   _buildMenuItem(
                     context,
-                    icon: Icons.people,
-                    title: '친구 목록',
-                    subtitle: '친구와 함께 환경 지키기',
-                    onTap: () {
-                      Navigator.pushNamed(context, '/friends');
-                    },
-                  ),
-                  _buildMenuItem(
-                    context,
                     icon: Icons.help_outline,
                     title: '도움말 / FAQ',
                     subtitle: '자주 묻는 질문',
                     onTap: () {
                       Navigator.pushNamed(context, '/faq');
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.exit_to_app,
+                    title: '로그아웃',
+                    subtitle: '현재 계정에서 로그아웃',
+                    onTap: () {
+                      Navigator.pushNamed(context, '/login');
                     },
                   ),
                 ],
