@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'data_usage_page.dart'; // Import the data usage page you've created
+import 'digital_carbon_page.dart'; // Import the data usage page you've created
 
 void main() {
   runApp(MyApp());
@@ -13,7 +13,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: DataUsagePage(), // Set DataUsagePage as the home screen
+      home: DataUsagePage(),
     );
   }
 }
