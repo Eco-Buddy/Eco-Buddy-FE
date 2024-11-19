@@ -15,24 +15,37 @@ class UserRepository {
       final Map<String, dynamic> json = jsonDecode(storedUserData);
       return UserModel.fromJson(json);
     } else {
-      // 초기 데이터를 반환 (JSON 파일 로드 대신 기본 데이터로 시작)
+      // 초기 데이터를 반환
       final Map<String, dynamic> defaultData = {
         "nickname": "사용자123",
         "level": 10,
         "title": "환경지킴이",
-        "profile_image": "assets/images/profile/default.png"
+        "profile_image": "assets/images/profile/default.png",
+        "points": 0, // 초기 포인트 값
       };
       return UserModel.fromJson(defaultData);
     }
   }
 
+  // 사용자 포인트 업데이트
+  Future<void> updateUserPoints(int points) async {
+    final user = await getUserData();
+    user.points += points; // 포인트 증가
+
+    // 업데이트된 데이터를 JSON으로 저장
+    final updatedUserData = user.toJson();
+    await _secureStorage.write(key: _userKey, value: jsonEncode(updatedUserData));
+
+    print('포인트가 $points만큼 증가했습니다. 현재 포인트: ${user.points}');
+  }
+
   // 사용자 이름 업데이트
   Future<void> updateUserName(String newName) async {
-    final userData = await getUserData();
-    final updatedUserData = userData.toJson();
-    updatedUserData['nickname'] = newName;
+    final user = await getUserData();
+    user.nickname = newName; // 이름 변경
 
-    // 보안 저장소에 저장
+    // 업데이트된 데이터를 JSON으로 저장
+    final updatedUserData = user.toJson();
     await _secureStorage.write(key: _userKey, value: jsonEncode(updatedUserData));
 
     print('사용자 이름이 $newName(으)로 변경되었습니다.');

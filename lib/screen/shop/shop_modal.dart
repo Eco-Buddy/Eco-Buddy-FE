@@ -9,7 +9,7 @@ class ShopModal extends StatefulWidget {
 
 class _ShopModalState extends State<ShopModal> {
   // 카테고리 목록
-  final List<String> categories = ['벽지', '바닥', '가구'];
+  final List<String> categories = ['벽지', '바닥'];
   String selectedCategory = '벽지'; // 기본 선택된 카테고리
 
   // 아이템 데이터

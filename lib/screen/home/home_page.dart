@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../data/repository/user_repository.dart';
 import '../../data/model/user_model.dart';
 import '../shop/shop_modal.dart'; // 상점 모달 추가
+import 'mission_dialog.dart'; // MissionDialog 임포트
 
 class HomePage extends StatelessWidget {
   final Future<UserModel> user = UserRepository().getUserData();
@@ -80,6 +81,18 @@ class HomePage extends StatelessWidget {
                   height: 160,
                 ),
               ),
+              Positioned(
+                bottom: 150,
+                left: MediaQuery.of(context).size.width * 0.1,
+                child: GestureDetector(
+                  onTap: () => _showMissionPopup(context),
+                  child: Image.asset(
+                    'assets/images/trash/trash_1.png',
+                    width: 60,
+                    height: 60,
+                  ),
+                ),
+              ),
             ],
           ),
         );
@@ -96,6 +109,61 @@ class HomePage extends StatelessWidget {
       ),
       builder: (context) => const ShopModal(),
     );
+  }
+
+  void _showMissionPopup(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => MissionDialog(
+        title: '쓰레기 치우기',
+        missionRequest: '다음 미션을 수행해 쓰레기를 치워주세요!',
+        missionContent: '매일 20개 삭제',
+        missionDescription: '성공 시 탄소발자국이 감소됩니다.\n매일 미션으로 추가 보상을 얻으세요!',
+        onComplete: () {
+          Navigator.pop(context);
+          _showCompletionDialog(context);
+        },
+        onLater: () {
+          Navigator.pop(context);
+        },
+      ),
+    );
+  }
+
+  void _showCompletionDialog(BuildContext context) {
+    UserRepository().updateUserPoints(100).then((_) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('미션 완료!'),
+          content: const Text('축하합니다! 보상을 획득했습니다. (+100 포인트)'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('확인'),
+            ),
+          ],
+        ),
+      );
+    }).catchError((error) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('오류'),
+          content: Text('포인트 업데이트 중 오류가 발생했습니다: $error'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('확인'),
+            ),
+          ],
+        ),
+      );
+    });
   }
 
   Widget _buildUserInfo(String nickname) {

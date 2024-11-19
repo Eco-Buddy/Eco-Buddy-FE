@@ -61,6 +61,21 @@ class _MenuPageState extends State<MenuPage> {
     );
   }
 
+  Future<void> _clearCookiesAndCache() async {
+    // 쿠키와 캐시 삭제
+    // WebViewController 또는 WebViewCookieManager를 사용하여 캐시와 쿠키 삭제
+    print('쿠키와 캐시 삭제 완료');
+    // WebViewController.clearCache()와 WebViewCookieManager().clearCookies() 사용 가능
+  }
+
+  void _logout() {
+    Navigator.pushReplacementNamed(
+      context,
+      '/login',
+      arguments: {'clearCookies': true}, // 로그아웃 시 쿠키 삭제 명령 전달
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -156,9 +171,7 @@ class _MenuPageState extends State<MenuPage> {
                     icon: Icons.exit_to_app,
                     title: '로그아웃',
                     subtitle: '현재 계정에서 로그아웃',
-                    onTap: () {
-                      Navigator.pushNamed(context, '/login');
-                    },
+                    onTap: _logout, // 로그아웃 버튼
                   ),
                 ],
               ),

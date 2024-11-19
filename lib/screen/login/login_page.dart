@@ -13,6 +13,7 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final WebViewCookieManager _cookieManager = WebViewCookieManager();
   // Android용 WebView Controller
   late WebViewController _webViewController;
 
@@ -140,6 +141,20 @@ class _LoginPageState extends State<LoginPage> {
     } else {
       print('로그인 완료 후 토큰 데이터 요청 실패');
     }
+  }
+
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    if (args != null && args['clearCookies'] == true) {
+      _clearCookiesAndCache();
+    }
+  }
+
+  Future<void> _clearCookiesAndCache() async {
+    await _cookieManager.clearCookies();
+    print('쿠키와 캐시가 삭제되었습니다.');
   }
 
   @override

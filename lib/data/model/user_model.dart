@@ -1,14 +1,16 @@
 class UserModel {
-  final String nickname;
+  String nickname;
   final int level;
   final String title;
   final String profileImage;
+  int points; // 포인트 필드 추가
 
   UserModel({
     required this.nickname,
     required this.level,
     required this.title,
     required this.profileImage,
+    this.points = 0, // 기본값 설정
   });
 
   // JSON 데이터를 UserModel로 변환
@@ -18,6 +20,7 @@ class UserModel {
       level: json['level'],
       title: json['title'],
       profileImage: json['profile_image'],
+      points: json['points'] ?? 0, // JSON에 points가 없으면 기본값 0
     );
   }
 
@@ -28,6 +31,7 @@ class UserModel {
       'level': level,
       'title': title,
       'profile_image': profileImage,
+      'points': points, // 포인트 필드 포함
     };
   }
 }
