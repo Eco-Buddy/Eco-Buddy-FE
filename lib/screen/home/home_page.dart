@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../data/repository/user_repository.dart'; // 사용자 데이터를 불러오기 위한 Repository
-import '../../data/model/user_model.dart'; // 사용자 모델
+import '../../data/repository/user_repository.dart';
+import '../../data/model/user_model.dart';
+import '../shop/shop_modal.dart'; // 상점 모달 추가
 
 class HomePage extends StatelessWidget {
   final Future<UserModel> user = UserRepository().getUserData();
@@ -22,14 +23,12 @@ class HomePage extends StatelessWidget {
         return Scaffold(
           body: Stack(
             children: [
-              // 배경 이미지
               Positioned.fill(
                 child: Image.asset(
                   'assets/images/background/background_1.png',
                   fit: BoxFit.cover,
                 ),
               ),
-              // 바닥 이미지
               Positioned(
                 bottom: 0,
                 left: 0,
@@ -40,7 +39,6 @@ class HomePage extends StatelessWidget {
                   height: 150,
                 ),
               ),
-              // 사용자 정보와 토큰 정보
               Positioned(
                 top: 20,
                 left: 16,
@@ -53,7 +51,6 @@ class HomePage extends StatelessWidget {
                   ],
                 ),
               ),
-              // Shop Icon과 Custom Icon
               Positioned(
                 top: MediaQuery.of(context).size.height * 0.2,
                 left: 16,
@@ -62,9 +59,7 @@ class HomePage extends StatelessWidget {
                   children: [
                     _buildIconButton(
                       'assets/images/icon/shop_icon.png',
-                      onTap: () {
-                        print("Shop Icon Clicked");
-                      },
+                      onTap: () => _openShopModal(context),
                     ),
                     const SizedBox(height: 8),
                     _buildIconButton(
@@ -76,7 +71,6 @@ class HomePage extends StatelessWidget {
                   ],
                 ),
               ),
-              // 캐릭터 이미지
               Positioned(
                 top: MediaQuery.of(context).size.height * 0.56,
                 left: (MediaQuery.of(context).size.width - 160) / 2,
@@ -90,6 +84,17 @@ class HomePage extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  void _openShopModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
+      ),
+      builder: (context) => const ShopModal(),
     );
   }
 
