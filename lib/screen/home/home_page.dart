@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../data/repository/user_repository.dart';
-import '../../data/model/user_model.dart';
+import 'package:provider/provider.dart';
+import '../../provider/user_provider.dart';
 import '../shop/shop_modal.dart';
 import 'mission_dialog.dart';
 
@@ -12,76 +12,42 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  late UserModel _userData; // UserModel을 상태로 관리
-  final UserRepository _userRepository = UserRepository();
-  bool _isLoading = true;
   bool _isTrashVisible = true; // 쓰레기 활성화 상태
 
-  @override
-  void initState() {
-    super.initState();
-    _loadUserData();
-  }
-
-  Future<void> _loadUserData() async {
-    try {
-      final user = await _userRepository.getUserData();
-      setState(() {
-        _userData = user;
-        _isLoading = false;
-      });
-    } catch (error) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  void _updateUserPoints(int points) async {
-    try {
-      await _userRepository.updateUserPoints(points);
-      setState(() {
-        _userData.points += points; // UI 상태 업데이트
-      });
-    } catch (error) {
-      print('Error updating user points: $error');
-    }
-  }
-
   void _openShopModal(BuildContext context) async {
-    final updatedPoints = await showModalBottomSheet<int>(
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
       ),
       builder: (context) => ShopModal(
-        currentPoints: _userData.points, // 현재 포인트 전달
+        currentPoints: userProvider.user?.points ?? 0, // 현재 포인트 전달
       ),
     );
-
-    if (updatedPoints != null) {
-      setState(() {
-        _userData.points = updatedPoints; // ShopModal에서 반환된 포인트 업데이트
-      });
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
+    final userProvider = Provider.of<UserProvider>(context);
+
+    if (userProvider.user == null) {
       return const Center(child: CircularProgressIndicator());
     }
 
     return Scaffold(
       body: Stack(
         children: [
+          // 배경 이미지
           Positioned.fill(
             child: Image.asset(
               'assets/images/background/background_1.png',
               fit: BoxFit.cover,
             ),
           ),
+          // 바닥 이미지
           Positioned(
             bottom: 0,
             left: 0,
@@ -92,18 +58,21 @@ class _HomePageState extends State<HomePage> {
               height: 150,
             ),
           ),
+          // 상단 사용자 정보 및 포인트
           Positioned(
             top: 20,
             left: 16,
+            right: 16,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildUserInfo(),
+                _buildUserInfo(userProvider),
                 const SizedBox(width: 16.0),
-                _buildTokenInfo(),
+                _buildTokenInfo(userProvider),
               ],
             ),
           ),
+          // 상점 및 커스텀 버튼
           Positioned(
             top: MediaQuery.of(context).size.height * 0.2,
             left: 16,
@@ -124,6 +93,7 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
           ),
+          // 캐릭터 이미지
           Positioned(
             top: MediaQuery.of(context).size.height * 0.56,
             left: (MediaQuery.of(context).size.width - 160) / 2,
@@ -133,6 +103,7 @@ class _HomePageState extends State<HomePage> {
               height: 160,
             ),
           ),
+          // 쓰레기 미션 버튼
           if (_isTrashVisible)
             Positioned(
               bottom: 150,
@@ -152,6 +123,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _showMissionPopup(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+
     showDialog(
       context: context,
       builder: (context) => MissionDialog(
@@ -162,15 +135,17 @@ class _HomePageState extends State<HomePage> {
         '메일 1개당 4g의 탄소발자국이 발생합니다.\n20개면 80g을 줄일 수 있겠네요!',
         onComplete: () {
           Navigator.pop(context);
-          _updateUserPoints(100); // 미션 완료 후 포인트 업데이트
+
+          // 포인트 업데이트 및 쓰레기 상태 변경
+          userProvider.updateUserPoints(100);
           setState(() {
-            _isTrashVisible = false; // 쓰레기 비활성화
+            _isTrashVisible = false;
           });
 
           // 5초 후 쓰레기 다시 활성화
           Future.delayed(const Duration(seconds: 5), () {
             setState(() {
-              _isTrashVisible = true; // 쓰레기 활성화
+              _isTrashVisible = true;
             });
           });
 
@@ -201,7 +176,9 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildUserInfo() {
+  Widget _buildUserInfo(UserProvider userProvider) {
+    final user = userProvider.user!;
+
     return Container(
       decoration: _buildInfoBoxDecoration(),
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
@@ -214,7 +191,7 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(width: 8.0),
           Text(
-            _userData.nickname,
+            user.nickname,
             style: const TextStyle(
               color: Colors.black,
               fontWeight: FontWeight.bold,
@@ -226,7 +203,9 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildTokenInfo() {
+  Widget _buildTokenInfo(UserProvider userProvider) {
+    final user = userProvider.user!;
+
     return Container(
       decoration: _buildInfoBoxDecoration(),
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
@@ -239,7 +218,7 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(width: 8.0),
           Text(
-            _userData.points.toString(), // 실시간으로 포인트 표시
+            user.points.toString(),
             style: const TextStyle(
               color: Colors.black,
               fontWeight: FontWeight.bold,
