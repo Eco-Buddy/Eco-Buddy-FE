@@ -4,7 +4,7 @@ import 'package:webview_windows/webview_windows.dart'; // Windows용 WebView
 import 'dart:io'; // 플랫폼 확인
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-
+import '../main/main_page.dart';
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
 

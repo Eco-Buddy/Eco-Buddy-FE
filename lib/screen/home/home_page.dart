@@ -1,83 +1,99 @@
 import 'package:flutter/material.dart';
+import '../../data/repository/user_repository.dart'; // 사용자 데이터를 불러오기 위한 Repository
+import '../../data/model/user_model.dart'; // 사용자 모델
 
 class HomePage extends StatelessWidget {
-  const HomePage({Key? key}) : super(key: key);
+  final Future<UserModel> user = UserRepository().getUserData();
+
+  HomePage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          // 배경 이미지
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/background/background_1.png',
-              fit: BoxFit.cover,
-            ),
-          ),
-          // 바닥 이미지
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Image.asset(
-              'assets/images/floor/floor_1.png',
-              fit: BoxFit.cover,
-              height: 150,
-            ),
-          ),
-          // 사용자 정보와 토큰 정보
-          Positioned(
-            top: 20,
-            left: 16,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildUserInfo(),
-                const SizedBox(width: 16.0), // 사용자 정보와 토큰 사이에 고정된 간격 추가
-                _buildTokenInfo(),
-              ],
-            ),
-          ),
-          // Shop Icon과 Custom Icon
-          Positioned(
-            top: MediaQuery.of(context).size.height * 0.2,
-            left: 16, // 왼쪽에 고정
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start, // 아이콘들을 왼쪽 정렬
-              children: [
-                _buildIconButton(
-                  'assets/images/icon/shop_icon.png',
-                  onTap: () {
-                    print("Shop Icon Clicked");
-                  },
+    return FutureBuilder<UserModel>(
+      future: user,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return const Center(child: Text('사용자 정보를 불러오는데 실패했습니다.'));
+        }
+
+        final userData = snapshot.data!;
+        return Scaffold(
+          body: Stack(
+            children: [
+              // 배경 이미지
+              Positioned.fill(
+                child: Image.asset(
+                  'assets/images/background/background_1.png',
+                  fit: BoxFit.cover,
                 ),
-                const SizedBox(height: 8), // 간격
-                _buildIconButton(
-                  'assets/images/icon/custom_icon.png',
-                  onTap: () {
-                    print("Custom Icon Clicked");
-                  },
+              ),
+              // 바닥 이미지
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Image.asset(
+                  'assets/images/floor/floor_1.png',
+                  fit: BoxFit.cover,
+                  height: 150,
                 ),
-              ],
-            ),
+              ),
+              // 사용자 정보와 토큰 정보
+              Positioned(
+                top: 20,
+                left: 16,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildUserInfo(userData.nickname),
+                    const SizedBox(width: 16.0),
+                    _buildTokenInfo(),
+                  ],
+                ),
+              ),
+              // Shop Icon과 Custom Icon
+              Positioned(
+                top: MediaQuery.of(context).size.height * 0.2,
+                left: 16,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildIconButton(
+                      'assets/images/icon/shop_icon.png',
+                      onTap: () {
+                        print("Shop Icon Clicked");
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    _buildIconButton(
+                      'assets/images/icon/custom_icon.png',
+                      onTap: () {
+                        print("Custom Icon Clicked");
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              // 캐릭터 이미지
+              Positioned(
+                top: MediaQuery.of(context).size.height * 0.56,
+                left: (MediaQuery.of(context).size.width - 160) / 2,
+                child: Image.asset(
+                  'assets/images/character/happy-1.png',
+                  width: 160,
+                  height: 160,
+                ),
+              ),
+            ],
           ),
-          // 캐릭터 이미지
-          Positioned(
-            top: MediaQuery.of(context).size.height * 0.56,
-            left: (MediaQuery.of(context).size.width - 160) / 2,
-            child: Image.asset(
-              'assets/images/character/happy-1.png',
-              width: 160,
-              height: 160,
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildUserInfo() {
+  Widget _buildUserInfo(String nickname) {
     return Container(
       decoration: _buildInfoBoxDecoration(),
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
@@ -89,9 +105,9 @@ class HomePage extends StatelessWidget {
             child: const Icon(Icons.person, color: Colors.white),
           ),
           const SizedBox(width: 8.0),
-          const Text(
-            '캐릭터 이름',
-            style: TextStyle(
+          Text(
+            nickname,
+            style: const TextStyle(
               color: Colors.black,
               fontWeight: FontWeight.bold,
               fontSize: 16,
@@ -131,11 +147,11 @@ class HomePage extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 80, // 아이콘 크기 유지
+        width: 80,
         height: 80,
         decoration: BoxDecoration(
-          shape: BoxShape.circle, // 원형으로 유지
-          color: Colors.transparent, // 배경 투명
+          shape: BoxShape.circle,
+          color: Colors.transparent,
         ),
         child: Center(
           child: Image.asset(
@@ -148,7 +164,6 @@ class HomePage extends StatelessWidget {
       ),
     );
   }
-
 
   BoxDecoration _buildInfoBoxDecoration() {
     return BoxDecoration(

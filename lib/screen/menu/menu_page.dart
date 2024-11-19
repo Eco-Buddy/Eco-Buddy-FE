@@ -11,11 +11,54 @@ class MenuPage extends StatefulWidget {
 
 class _MenuPageState extends State<MenuPage> {
   late Future<UserModel> user;
+  final UserRepository userRepository = UserRepository();
 
   @override
   void initState() {
     super.initState();
-    user = UserRepository().getUserData(); // 사용자 데이터 로드
+    user = userRepository.getUserData(); // 사용자 데이터 로드
+  }
+
+  Future<void> _updateUserName(String newName) async {
+    await userRepository.updateUserName(newName);
+    setState(() {
+      // 사용자 데이터를 다시 로드
+      user = userRepository.getUserData();
+    });
+  }
+
+  Future<void> _showNameChangeDialog(String currentName) async {
+    final TextEditingController nameController = TextEditingController();
+    nameController.text = currentName;
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('이름 변경'),
+          content: TextField(
+            controller: nameController,
+            decoration: const InputDecoration(labelText: '새로운 이름 입력'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context), // 다이얼로그 닫기
+              child: const Text('취소'),
+            ),
+            TextButton(
+              onPressed: () {
+                final newName = nameController.text.trim();
+                if (newName.isNotEmpty) {
+                  _updateUserName(newName);
+                  Navigator.pop(context); // 다이얼로그 닫기
+                }
+              },
+              child: const Text('변경'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -25,8 +68,8 @@ class _MenuPageState extends State<MenuPage> {
         title: const Text(
           '메뉴',
           style: TextStyle(
-            fontWeight: FontWeight.bold, // Bold 적용
-            color: Colors.white, // 하얀색 글자
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
         backgroundColor: Colors.green[400],
@@ -117,15 +160,6 @@ class _MenuPageState extends State<MenuPage> {
                       Navigator.pushNamed(context, '/login');
                     },
                   ),
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.lightbulb,
-                    title: '쓰레기 생성',
-                    subtitle: '미션 생성을 위한 쓰레기 생성',
-                    onTap: () {
-                      Navigator.pushNamed(context, '/makeTrash');
-                    },
-                  ),
                 ],
               ),
             ],
@@ -141,22 +175,31 @@ class _MenuPageState extends State<MenuPage> {
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            CircleAvatar(
-              radius: 40,
-              backgroundImage: AssetImage(user.profileImage),
-            ),
-            const SizedBox(width: 16.0),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Row(
               children: [
-                Text(
-                  '${user.nickname}',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                CircleAvatar(
+                  radius: 40,
+                  backgroundImage: AssetImage(user.profileImage),
                 ),
-                Text('레벨: ${user.level}', style: const TextStyle(fontSize: 16)),
-                Text('칭호: ${user.title}', style: const TextStyle(fontSize: 16)),
+                const SizedBox(width: 16.0),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user.nickname,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    Text('레벨: ${user.level}', style: const TextStyle(fontSize: 16)),
+                    Text('칭호: ${user.title}', style: const TextStyle(fontSize: 16)),
+                  ],
+                ),
               ],
+            ),
+            IconButton(
+              icon: const Icon(Icons.edit, color: Colors.green),
+              onPressed: () => _showNameChangeDialog(user.nickname),
             ),
           ],
         ),
@@ -197,8 +240,8 @@ class _MenuPageState extends State<MenuPage> {
         title: Text(
           title,
           style: const TextStyle(
-            fontWeight: FontWeight.bold, // Bold 적용
-            color: Colors.black, // 하얀색 적용하려면 여기 수정
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
           ),
         ),
         subtitle: Text(subtitle),
