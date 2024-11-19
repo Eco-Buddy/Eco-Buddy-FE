@@ -20,7 +20,7 @@ class UserModel {
       level: json['level'],
       title: json['title'],
       profileImage: json['profile_image'],
-      points: json['points'] ?? 0, // JSON에 points가 없으면 기본값 0
+      points: json['points'] ?? 0,
     );
   }
 

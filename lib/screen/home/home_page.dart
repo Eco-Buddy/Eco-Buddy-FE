@@ -4,20 +4,14 @@ import '../../provider/user_provider.dart';
 import '../shop/shop_modal.dart';
 import 'mission_dialog.dart';
 
-class HomePage extends StatefulWidget {
+class HomePage extends StatelessWidget {
   const HomePage({Key? key}) : super(key: key);
-
-  @override
-  _HomePageState createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  bool _isTrashVisible = true; // 쓰레기 활성화 상태
 
   void _openShopModal(BuildContext context) async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
 
-    await showModalBottomSheet(
+    // 모달에서 남은 포인트를 반환받아 업데이트
+    final updatedPoints = await showModalBottomSheet<int>(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
@@ -27,6 +21,10 @@ class _HomePageState extends State<HomePage> {
         currentPoints: userProvider.user?.points ?? 0, // 현재 포인트 전달
       ),
     );
+
+    if (updatedPoints != null) {
+      userProvider.updateUserPoints(updatedPoints - (userProvider.user?.points ?? 0));
+    }
   }
 
   @override
@@ -40,25 +38,8 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       body: Stack(
         children: [
-          // 배경 이미지
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/background/background_1.png',
-              fit: BoxFit.cover,
-            ),
-          ),
-          // 바닥 이미지
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Image.asset(
-              'assets/images/floor/floor_1.png',
-              fit: BoxFit.cover,
-              height: 150,
-            ),
-          ),
-          // 상단 사용자 정보 및 포인트
+          _buildBackground(),
+          _buildFloor(),
           Positioned(
             top: 20,
             left: 16,
@@ -67,64 +48,93 @@ class _HomePageState extends State<HomePage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _buildUserInfo(userProvider),
-                const SizedBox(width: 16.0),
                 _buildTokenInfo(userProvider),
               ],
             ),
           ),
-          // 상점 및 커스텀 버튼
-          Positioned(
-            top: MediaQuery.of(context).size.height * 0.2,
-            left: 16,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildIconButton(
-                  'assets/images/icon/shop_icon.png',
-                  onTap: () => _openShopModal(context),
-                ),
-                const SizedBox(height: 8),
-                _buildIconButton(
-                  'assets/images/icon/custom_icon.png',
-                  onTap: () {
-                    print("Custom Icon Clicked");
-                  },
-                ),
-              ],
-            ),
-          ),
-          // 캐릭터 이미지
-          Positioned(
-            top: MediaQuery.of(context).size.height * 0.56,
-            left: (MediaQuery.of(context).size.width - 160) / 2,
-            child: Image.asset(
-              'assets/images/character/happy-1.png',
-              width: 160,
-              height: 160,
-            ),
-          ),
-          // 쓰레기 미션 버튼
-          if (_isTrashVisible)
-            Positioned(
-              bottom: 150,
-              left: MediaQuery.of(context).size.width * 0.1,
-              child: GestureDetector(
-                onTap: () => _showMissionPopup(context),
-                child: Image.asset(
-                  'assets/images/trash/trash_1.png',
-                  width: 60,
-                  height: 60,
-                ),
-              ),
-            ),
+          _buildIcons(context),
+          _buildCharacter(context),
+          _buildTrashButton(context),
         ],
       ),
     );
   }
 
-  void _showMissionPopup(BuildContext context) {
+  Widget _buildBackground() {
+    return Positioned.fill(
+      child: Image.asset(
+        'assets/images/background/background_1.png',
+        fit: BoxFit.cover,
+      ),
+    );
+  }
+
+  Widget _buildFloor() {
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: Image.asset(
+        'assets/images/floor/floor_1.png',
+        fit: BoxFit.cover,
+        height: 150,
+      ),
+    );
+  }
+
+  Widget _buildIcons(BuildContext context) {
+    return Positioned(
+      top: MediaQuery.of(context).size.height * 0.2,
+      left: 16,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildIconButton(
+            'assets/images/icon/shop_icon.png',
+            onTap: () => _openShopModal(context),
+          ),
+          const SizedBox(height: 8),
+          _buildIconButton(
+            'assets/images/icon/custom_icon.png',
+            onTap: () {
+              print("Custom Icon Clicked");
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCharacter(BuildContext context) {
+    return Positioned(
+      top: MediaQuery.of(context).size.height * 0.56,
+      left: (MediaQuery.of(context).size.width - 160) / 2,
+      child: Image.asset(
+        'assets/images/character/happy-1.png',
+        width: 160,
+        height: 160,
+      ),
+    );
+  }
+
+  Widget _buildTrashButton(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
 
+    return Positioned(
+      bottom: 150,
+      left: MediaQuery.of(context).size.width * 0.1,
+      child: GestureDetector(
+        onTap: () => _showMissionPopup(context, userProvider),
+        child: Image.asset(
+          'assets/images/trash/trash_1.png',
+          width: 60,
+          height: 60,
+        ),
+      ),
+    );
+  }
+
+  void _showMissionPopup(BuildContext context, UserProvider userProvider) {
     showDialog(
       context: context,
       builder: (context) => MissionDialog(
@@ -135,20 +145,7 @@ class _HomePageState extends State<HomePage> {
         '메일 1개당 4g의 탄소발자국이 발생합니다.\n20개면 80g을 줄일 수 있겠네요!',
         onComplete: () {
           Navigator.pop(context);
-
-          // 포인트 업데이트 및 쓰레기 상태 변경
           userProvider.updateUserPoints(100);
-          setState(() {
-            _isTrashVisible = false;
-          });
-
-          // 5초 후 쓰레기 다시 활성화
-          Future.delayed(const Duration(seconds: 5), () {
-            setState(() {
-              _isTrashVisible = true;
-            });
-          });
-
           _showCompletionDialog(context);
         },
         onLater: () {

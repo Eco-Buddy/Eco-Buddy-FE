@@ -56,18 +56,16 @@ class _ShopModalState extends State<ShopModal> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // 배경을 블러 처리
         Positioned.fill(
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0), // 블러 강도 설정
+            filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
             child: Container(
-              color: Colors.black.withOpacity(0.3), // 투명한 어두운 배경
+              color: Colors.black.withOpacity(0.3),
             ),
           ),
         ),
-        // Draggable Sheet
         DraggableScrollableSheet(
-          initialChildSize: 0.8, // 팝업 높이를 낮춤
+          initialChildSize: 0.8,
           maxChildSize: 0.9,
           minChildSize: 0.6,
           builder: (context, scrollController) {
@@ -135,7 +133,6 @@ class _ShopModalState extends State<ShopModal> {
                               }).toList(),
                             ),
                             const SizedBox(width: 16.0),
-                            // 포인트 표시
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 vertical: 8.0,
