@@ -4,6 +4,8 @@ import 'screen/login/login_page.dart'; // LoginPage import
 import 'screen/main/main_page.dart'; // MainPage import
 
 void main() {
+  // Flutter 플랫폼 초기화
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 

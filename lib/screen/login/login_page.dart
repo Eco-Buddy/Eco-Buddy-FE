@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:webview_flutter/webview_flutter.dart'; // Android용 WebView
+import 'package:webview_windows/webview_windows.dart'; // Windows용 WebView
+import 'dart:io'; // 플랫폼 확인
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -8,25 +13,133 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // 현재 UI 상태 변수 (웹뷰 사용 여부 등)
+  // Android용 WebView Controller
+  late WebViewController _webViewController;
+
+  // Windows용 WebView Controller
+  late WebviewController _windowsWebViewController;
+
   bool _isWebViewVisible = false;
 
-  // 카카오 로그인 버튼 클릭 시 처리
-  void _loadKakaoLoginPage() {
-    setState(() {
-      _isWebViewVisible = false;
-    });
-    // 메인 페이지로 이동
-    Navigator.pushReplacementNamed(context, '/main');
+  final String naverServerUrl = 'http://223.130.162.100:4525/login/request/naver';
+  final String kakaoServerUrl = 'http://223.130.162.100:4525/login/request/kakao';
+
+  String? _naverUserId;
+  String? _naverAccessToken;
+  String? _kakaoUserId;
+  String? _kakaoAccessToken;
+
+  @override
+  void initState() {
+    super.initState();
+    if (Platform.isAndroid) {
+      // Android용 WebView 초기화
+      WidgetsFlutterBinding.ensureInitialized();
+      _webViewController = WebViewController()
+        ..setJavaScriptMode(JavaScriptMode.unrestricted)
+        ..setNavigationDelegate(
+          NavigationDelegate(
+            onNavigationRequest: (NavigationRequest request) {
+              if (request.url.startsWith(
+                  "http://223.130.162.100:4525/login/oauth2/code/naver")) {
+                _handleRedirectUri(request.url, isNaver: true);
+                return NavigationDecision.prevent;
+              } else if (request.url.startsWith(
+                  "http://223.130.162.100:4525/login/oauth2/code/kakao")) {
+                _handleRedirectUri(request.url, isNaver: false);
+                return NavigationDecision.prevent;
+              }
+              return NavigationDecision.navigate;
+            },
+          ),
+        );
+    } else if (Platform.isWindows) {
+      // Windows용 WebView 초기화
+      _windowsWebViewController = WebviewController();
+      _initializeWindowsWebView();
+    }
   }
 
-  // 네이버 로그인 버튼 클릭 시 처리
-  void _loadNaverLoginPage() {
+  // Windows WebView 초기화
+  Future<void> _initializeWindowsWebView() async {
+    try {
+      await _windowsWebViewController.initialize();
+    } catch (e) {
+      print("Windows WebView 초기화 실패: $e");
+    }
+  }
+
+  // 네이버 로그인 페이지 로드
+  void _loadNaverLoginPage() async {
+    final response = await http.get(Uri.parse(naverServerUrl));
+    if (response.statusCode == 200) {
+      final naverLoginUrl = response.body;
+      _loadWebView(naverLoginUrl);
+    } else {
+      print('네이버 로그인 URL 로딩 실패');
+    }
+  }
+
+  // 카카오 로그인 페이지 로드
+  void _loadKakaoLoginPage() async {
+    final response = await http.get(Uri.parse(kakaoServerUrl));
+    if (response.statusCode == 200) {
+      final kakaoLoginUrl = response.body;
+      _loadWebView(kakaoLoginUrl);
+    } else {
+      print('카카오 로그인 URL 로딩 실패');
+    }
+  }
+
+  // WebView 로드 (Android/Windows 구분)
+  void _loadWebView(String url) {
+    if (Platform.isAndroid) {
+      setState(() {
+        _isWebViewVisible = true;
+      });
+      _webViewController.loadRequest(Uri.parse(url));
+    } else if (Platform.isWindows) {
+      _windowsWebViewController.loadUrl(url);
+      _windowsWebViewController.url.listen((String? redirectedUrl) {
+        if (redirectedUrl != null &&
+            redirectedUrl.startsWith(
+                "http://223.130.162.100:4525/login/oauth2/code")) {
+          _handleRedirectUri(redirectedUrl,
+              isNaver: redirectedUrl.contains("naver"));
+        }
+      });
+    }
+  }
+
+  // Redirect URI 처리
+  void _handleRedirectUri(String url, {required bool isNaver}) async {
+    if (Platform.isWindows) {
+      // Windows WebView 닫기
+      await _windowsWebViewController.dispose(); // close 대신 dispose 사용
+    }
     setState(() {
-      _isWebViewVisible = false;
+      _isWebViewVisible = false; // Android WebView 숨기기
     });
-    // 메인 페이지로 이동
-    Navigator.pushReplacementNamed(context, '/main');
+
+    final response = await http.post(Uri.parse(url));
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+
+      if (isNaver) {
+        _naverUserId = data['id'];
+        _naverAccessToken = data['access_token'];
+        print('네이버 로그인 성공: ID=$_naverUserId, 토큰=$_naverAccessToken');
+      } else {
+        _kakaoUserId = data['id'];
+        _kakaoAccessToken = data['access_token'];
+        print('카카오 로그인 성공: ID=$_kakaoUserId, 토큰=$_kakaoAccessToken');
+      }
+
+      // 메인 페이지로 이동
+      Navigator.pushReplacementNamed(context, '/main');
+    } else {
+      print('로그인 완료 후 토큰 데이터 요청 실패');
+    }
   }
 
   @override
@@ -66,7 +179,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 40),
                     ElevatedButton.icon(
-                      onPressed: _loadKakaoLoginPage, // 버튼 클릭 시 처리
+                      onPressed: _loadKakaoLoginPage,
                       icon: Image.asset(
                         'assets/images/icon/kakao_icon.png',
                         width: 24,
@@ -87,7 +200,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
-                      onPressed: _loadNaverLoginPage, // 버튼 클릭 시 처리
+                      onPressed: _loadNaverLoginPage,
                       icon: Image.asset(
                         'assets/images/icon/naver_icon.png',
                         width: 24,
@@ -110,14 +223,11 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
             ),
-            if (_isWebViewVisible)
-              Container(
-                width: double.infinity,
-                height: double.infinity,
-                color: Colors.black.withOpacity(0.7), // 웹뷰가 보여질 때의 배경 색상
-                child: const Center(
-                  child: CircularProgressIndicator(),
-                ),
+            if (_isWebViewVisible && Platform.isAndroid)
+              WebViewWidget(controller: _webViewController),
+            if (_isWebViewVisible && Platform.isWindows)
+              Positioned.fill(
+                child: Webview(_windowsWebViewController),
               ),
           ],
         ),
