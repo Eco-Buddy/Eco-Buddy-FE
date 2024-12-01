@@ -1,36 +1,61 @@
 import 'package:flutter/material.dart';
-import '../../data/repository/user_repository.dart';
-import '../../data/model/user_model.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class UserProvider extends ChangeNotifier {
-  UserModel? _user; // 사용자 데이터
-  final UserRepository _userRepository = UserRepository();
+  Map<String, dynamic>? user;
 
-  UserModel? get user => _user; // 사용자 데이터를 외부에서 읽기
-
-  // 사용자 데이터 로드
-  Future<void> loadUser() async {
+  Future<void> fetchUserData() async {
     try {
-      _user = await _userRepository.getUserData();
-      notifyListeners(); // 데이터 로드 후 상태 변경 알림
+      final response = await http.get(Uri.parse('http://223.130.162.100:4525/api/user'));
+      if (response.statusCode == 200) {
+        user = jsonDecode(response.body);
+        notifyListeners();
+      } else {
+        throw Exception('Failed to load user data');
+      }
     } catch (e) {
-      print('Failed to load user data: $e');
+      print('Error fetching user data: $e');
     }
   }
 
-  // 사용자 이름 업데이트
-  Future<void> updateUserName(String newName) async {
-    if (_user == null) return;
-    await _userRepository.updateUserName(newName); // Repository를 통해 이름 변경
-    _user!.nickname = newName; // 사용자 데이터 업데이트
-    notifyListeners(); // 상태 변경 알림
+  Future<void> updateUserPoints(int points) async {
+    if (user == null) return;
+
+    try {
+      final response = await http.patch(
+        Uri.parse('http://223.130.162.100:4525/api/user/points'),
+        body: jsonEncode({'points': points}),
+        headers: {'Content-Type': 'application/json'},
+      );
+      if (response.statusCode == 200) {
+        user!['points'] = jsonDecode(response.body)['points'];
+        notifyListeners();
+      } else {
+        throw Exception('Failed to update points');
+      }
+    } catch (e) {
+      print('Error updating points: $e');
+    }
   }
 
-  // 포인트 업데이트
-  Future<void> updateUserPoints(int points) async {
-    if (_user == null) return;
-    _user!.points += points; // 로컬 상태 업데이트
-    await _userRepository.updateUserPoints(points); // Repository 업데이트
-    notifyListeners(); // 상태 변경 알림
+  Future<void> updateUserName(String newName) async {
+    if (user == null) return;
+
+    try {
+      final response = await http.patch(
+        Uri.parse('http://223.130.162.100:4525/api/user/name'),
+        body: jsonEncode({'name': newName}),
+        headers: {'Content-Type': 'application/json'},
+      );
+      if (response.statusCode == 200) {
+        user!['nickname'] = jsonDecode(response.body)['nickname'];
+        notifyListeners();
+      } else {
+        throw Exception('Failed to update name');
+      }
+    } catch (e) {
+      print('Error updating name: $e');
+    }
   }
 }

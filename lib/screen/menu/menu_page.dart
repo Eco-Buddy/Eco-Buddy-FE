@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../provider/user_provider.dart';
-import '../../data/model/user_model.dart';
 
 class MenuPage extends StatelessWidget {
   const MenuPage({Key? key}) : super(key: key);
@@ -11,6 +10,7 @@ class MenuPage extends StatelessWidget {
     final userProvider = Provider.of<UserProvider>(context);
 
     if (userProvider.user == null) {
+      userProvider.fetchUserData(); // 서버에서 사용자 데이터 가져오기
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -109,7 +109,7 @@ class MenuPage extends StatelessWidget {
   }
 
   Widget _buildUserProfile(
-      BuildContext context, UserProvider userProvider, UserModel user) {
+      BuildContext context, UserProvider userProvider, Map<String, dynamic> user) {
     return Card(
       elevation: 4.0,
       child: Padding(
@@ -121,20 +121,28 @@ class MenuPage extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 40,
-                  backgroundImage: AssetImage(user.profileImage),
+                  backgroundColor: Colors.grey[300],
+                  backgroundImage: user['profile_image'].startsWith('http')
+                      ? NetworkImage(user['profile_image']) // 프로필 이미지 URL
+                      : AssetImage(user['profile_image']) as ImageProvider, // 로컬 이미지
+                  child: user['profile_image'].isEmpty
+                      ? const Icon(Icons.person, size: 40, color: Colors.white)
+                      : null, // 기본 아이콘 표시
                 ),
                 const SizedBox(width: 16.0),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      user.nickname,
+                      user['nickname'],
                       style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    Text('레벨: ${user.level}',
+                    Text('레벨: ${user['level']}',
                         style: const TextStyle(fontSize: 16)),
-                    Text('칭호: ${user.title}',
+                    Text('칭호: ${user['title']}',
                         style: const TextStyle(fontSize: 16)),
                   ],
                 ),
@@ -150,10 +158,9 @@ class MenuPage extends StatelessWidget {
     );
   }
 
-  void _showNameChangeDialog(
-      BuildContext context, UserProvider userProvider) {
+  void _showNameChangeDialog(BuildContext context, UserProvider userProvider) {
     final TextEditingController nameController =
-    TextEditingController(text: userProvider.user?.nickname ?? '');
+    TextEditingController(text: userProvider.user?['nickname'] ?? '');
 
     showDialog(
       context: context,
@@ -173,7 +180,7 @@ class MenuPage extends StatelessWidget {
               onPressed: () {
                 final newName = nameController.text.trim();
                 if (newName.isNotEmpty) {
-                  userProvider.updateUserName(newName);
+                  userProvider.updateUserName(newName); // 서버에 업데이트
                   Navigator.pop(context);
                 }
               },

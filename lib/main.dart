@@ -18,7 +18,13 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => UserProvider()..loadUser()),
+        ChangeNotifierProvider(
+          create: (_) {
+            final userProvider = UserProvider();
+            userProvider.fetchUserData(); // 사용자 데이터를 초기화
+            return userProvider;
+          },
+        ),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

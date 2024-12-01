@@ -4,7 +4,9 @@ import 'package:webview_windows/webview_windows.dart'; // Windows용 WebView
 import 'dart:io'; // 플랫폼 확인
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart'; // 로컬 저장소 사용
 import '../main/main_page.dart';
+
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
 
@@ -14,10 +16,7 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final WebViewCookieManager _cookieManager = WebViewCookieManager();
-  // Android용 WebView Controller
   late WebViewController _webViewController;
-
-  // Windows용 WebView Controller
   late WebviewController _windowsWebViewController;
 
   bool _isWebViewVisible = false;
@@ -25,16 +24,10 @@ class _LoginPageState extends State<LoginPage> {
   final String naverServerUrl = 'http://223.130.162.100:4525/login/request/naver';
   final String kakaoServerUrl = 'http://223.130.162.100:4525/login/request/kakao';
 
-  String? _naverUserId;
-  String? _naverAccessToken;
-  String? _kakaoUserId;
-  String? _kakaoAccessToken;
-
   @override
   void initState() {
     super.initState();
     if (Platform.isAndroid) {
-      // Android용 WebView 초기화
       WidgetsFlutterBinding.ensureInitialized();
       _webViewController = WebViewController()
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
@@ -55,13 +48,11 @@ class _LoginPageState extends State<LoginPage> {
           ),
         );
     } else if (Platform.isWindows) {
-      // Windows용 WebView 초기화
       _windowsWebViewController = WebviewController();
       _initializeWindowsWebView();
     }
   }
 
-  // Windows WebView 초기화
   Future<void> _initializeWindowsWebView() async {
     try {
       await _windowsWebViewController.initialize();
@@ -70,7 +61,6 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // 네이버 로그인 페이지 로드
   void _loadNaverLoginPage() async {
     final response = await http.get(Uri.parse(naverServerUrl));
     if (response.statusCode == 200) {
@@ -81,7 +71,6 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // 카카오 로그인 페이지 로드
   void _loadKakaoLoginPage() async {
     final response = await http.get(Uri.parse(kakaoServerUrl));
     if (response.statusCode == 200) {
@@ -92,7 +81,6 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // WebView 로드 (Android/Windows 구분)
   void _loadWebView(String url) {
     if (Platform.isAndroid) {
       setState(() {
@@ -112,44 +100,52 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // Redirect URI 처리
   void _handleRedirectUri(String url, {required bool isNaver}) async {
     if (Platform.isWindows) {
-      // Windows WebView 닫기
-      await _windowsWebViewController.dispose(); // close 대신 dispose 사용
+      await _windowsWebViewController.dispose();
     }
     setState(() {
-      _isWebViewVisible = false; // Android WebView 숨기기
+      _isWebViewVisible = false;
     });
 
     final response = await http.post(Uri.parse(url));
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
+      await _saveUserData(
+        id: data['id'],
+        name: data['name'],
+        profileImage: data['profile_image'],
+        accessToken: data['access_token'],
+        isNew: response.headers['isNew'] == "1",
+        isNaver: isNaver,
+      );
 
-      if (isNaver) {
-        _naverUserId = data['id'];
-        _naverAccessToken = data['access_token'];
-        print('네이버 로그인 성공: ID=$_naverUserId, 토큰=$_naverAccessToken');
-      } else {
-        _kakaoUserId = data['id'];
-        _kakaoAccessToken = data['access_token'];
-        print('카카오 로그인 성공: ID=$_kakaoUserId, 토큰=$_kakaoAccessToken');
-      }
+      print('${isNaver ? "네이버" : "카카오"} 로그인 성공: ID=${data['id']}, 토큰=${data['access_token']}');
 
-      // 메인 페이지로 이동
       Navigator.pushReplacementNamed(context, '/main');
     } else {
       print('로그인 완료 후 토큰 데이터 요청 실패');
     }
   }
 
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  Future<void> _saveUserData({
+    required String id,
+    required String name,
+    required String profileImage,
+    required String accessToken,
+    required bool isNew,
+    required bool isNaver,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
 
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    if (args != null && args['clearCookies'] == true) {
-      _clearCookiesAndCache();
-    }
+    await prefs.setString('userId', id);
+    await prefs.setString('userName', name);
+    await prefs.setString('profileImage', profileImage);
+    await prefs.setString('accessToken', accessToken);
+    await prefs.setBool('isNew', isNew);
+    await prefs.setString('provider', isNaver ? 'naver' : 'kakao');
+
+    print('사용자 데이터가 저장되었습니다.');
   }
 
   Future<void> _clearCookiesAndCache() async {

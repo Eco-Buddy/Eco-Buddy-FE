@@ -1,5 +1,18 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // 보안 저장소
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+// 서버 기본 주소
+const String baseUrl = 'http://ecobuddy.kro.kr:4525';
+
+// 엔드포인트 정의
+class ApiEndpoints {
+  static const String start = '/start'; // /start 엔드포인트
+  static const String logout = '/logout'; // /logout 엔드포인트
+}
 
 class StartPage extends StatefulWidget {
   const StartPage({Key? key}) : super(key: key);
@@ -9,68 +22,153 @@ class StartPage extends StatefulWidget {
 }
 
 class _StartPageState extends State<StartPage> {
-  final FlutterSecureStorage _secureStorage = FlutterSecureStorage(); // 보안 저장소 인스턴스
+  final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
+  String? deviceId; // 기기 ID 저장
+  bool isLoading = true; // 로딩 상태 관리
+  String? errorMessage; // 에러 메시지 관리
 
   @override
   void initState() {
     super.initState();
-    _setTestLoginState(); // 테스트용 로그인 상태 설정
+    _fetchDeviceId(); // 초기화 시 기기 ID 가져오기
   }
 
-  // 테스트용 로그인 상태 설정
-  Future<void> _setTestLoginState() async {
-    final isLoggedIn = await _secureStorage.read(key: 'isLoggedIn');
-    if (isLoggedIn == null) {
-      await _secureStorage.write(key: 'isLoggedIn', value: 'false'); // 초기화
+  // 기기 ID 가져오기
+  Future<void> _fetchDeviceId() async {
+    final deviceInfo = DeviceInfoPlugin();
+    String id = 'unknown';
+
+    try {
+      if (Platform.isAndroid) {
+        final androidInfo = await deviceInfo.androidInfo;
+        id = androidInfo.id ?? 'unknown'; // Android ID 가져오기
+      } else if (Platform.isIOS) {
+        final iosInfo = await deviceInfo.iosInfo;
+        id = iosInfo.identifierForVendor ?? 'unknown'; // iOS ID 가져오기
+      } else if (Platform.isWindows) {
+        final windowsInfo = await deviceInfo.windowsInfo;
+        id = windowsInfo.deviceId ?? 'unknown'; // Windows ID 가져오기
+      }
+    } catch (e) {
+      print('Error fetching device ID: $e');
+      setState(() {
+        errorMessage = 'Failed to fetch device ID';
+      });
     }
+
+    setState(() {
+      deviceId = id;
+      isLoading = false; // 로딩 완료
+    });
+    print('Device ID: $deviceId');
+    print('Device ID Type: ${deviceId.runtimeType}');
   }
 
-  // 로그인 기록 확인 및 페이지 이동
-  Future<void> _navigateBasedOnLoginStatus() async {
-    final isLoggedIn = await _secureStorage.read(key: 'isLoggedIn');
-    if (isLoggedIn == 'true') {
-      Navigator.pushReplacementNamed(context, '/main'); // MainPage로 이동
-    } else {
-      Navigator.pushReplacementNamed(context, '/login'); // LoginPage로 이동
+  // /start API 호출
+  Future<void> _sendDeviceId() async {
+    if (deviceId == null || deviceId == 'unknown') {
+      print('Invalid Device ID. Cannot send request.');
+      setState(() {
+        errorMessage = 'Invalid Device ID';
+      });
+      return;
+    }
+
+    final url = Uri.parse('$baseUrl${ApiEndpoints.start}'); // /start 엔드포인트 URL
+
+    try {
+      print('Sending Device ID: $deviceId');
+
+      final response = await http.post(
+        url,
+        body: jsonEncode({'id': deviceId}),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      print('Response status code: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final cookies = response.headers['set-cookie'];
+        if (cookies != null) {
+          await _secureStorage.write(key: 'session_cookie', value: cookies);
+          print('Session cookie saved: $cookies');
+        }
+
+        final isNew = response.headers['isNew'];
+        if (isNew == '1') {
+          Navigator.pushReplacementNamed(context, '/main'); // 신규 회원 -> 메인 페이지
+        } else {
+          Navigator.pushReplacementNamed(context, '/login'); // 기존 회원 -> 로그인 페이지
+        }
+      } else {
+        print('Server error: ${response.statusCode} ${response.body}');
+        setState(() {
+          errorMessage = 'Server error: ${response.statusCode}';
+        });
+      }
+    } catch (e) {
+      print('Error sending Device ID: $e');
+      setState(() {
+        errorMessage = 'Error sending Device ID';
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // 화면 크기 가져오기
     final screenHeight = MediaQuery.of(context).size.height;
 
-    // 버튼 크기 설정 (화면 비율에 따라 크기 조정)
-    final buttonWidth = screenHeight * 0.5; // 화면 높이의 50%
-    final buttonHeight = screenHeight * 0.08; // 화면 높이의 8%
+    final buttonWidth = screenHeight * 0.5;
+    final buttonHeight = screenHeight * 0.08;
 
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // 배경 이미지
           Positioned.fill(
             child: Image.asset(
-              'assets/images/start/start_background.png', // 배경 이미지 경로
-              fit: BoxFit.fitHeight, // 세로로 꽉 차도록 설정
-              alignment: Alignment.center, // 이미지를 화면 중앙에 정렬
+              'assets/images/start/start_background.png',
+              fit: BoxFit.fitHeight,
+              alignment: Alignment.center,
             ),
           ),
-          // 중앙에 Start 버튼
           Align(
-            alignment: Alignment(0, 0.8), // 화면 하단으로 배치 (-1: 위, 1: 아래)
+            alignment: const Alignment(0, -0.5),
+            child: isLoading
+                ? const CircularProgressIndicator() // 로딩 중 표시
+                : errorMessage != null
+                ? Text(
+              errorMessage!,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.red,
+              ),
+            )
+                : Text(
+              deviceId ?? 'Unknown Device ID', // 기기 ID 표시
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+          ),
+          Align(
+            alignment: const Alignment(0, 0.8),
             child: ElevatedButton(
-              onPressed: _navigateBasedOnLoginStatus, // Start 버튼 클릭 시 로그인 상태 확인 후 이동
+              onPressed: _sendDeviceId,
               style: ElevatedButton.styleFrom(
                 padding: EdgeInsets.symmetric(
                   horizontal: buttonWidth * 0.2,
                   vertical: buttonHeight * 0.5,
                 ),
-                backgroundColor: Colors.white, // 버튼 배경색
-                shadowColor: Colors.grey, // 그림자 색상
-                elevation: 10, // 버튼 그림자 높이
+                backgroundColor: Colors.white,
+                shadowColor: Colors.grey,
+                elevation: 10,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(50), // 둥근 모서리
+                  borderRadius: BorderRadius.circular(50),
                 ),
               ),
               child: const Text(
@@ -78,7 +176,7 @@ class _StartPageState extends State<StartPage> {
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black, // 텍스트 색상
+                  color: Colors.black,
                   letterSpacing: 1.5,
                 ),
               ),

@@ -18,12 +18,13 @@ class HomePage extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
       ),
       builder: (context) => ShopModal(
-        currentPoints: userProvider.user?.points ?? 0, // 현재 포인트 전달
+        currentPoints: userProvider.user?['points'] ?? 0, // 현재 포인트 전달
       ),
     );
 
     if (updatedPoints != null) {
-      userProvider.updateUserPoints(updatedPoints - (userProvider.user?.points ?? 0));
+      final difference = updatedPoints - (userProvider.user?['points'] ?? 0);
+      userProvider.updateUserPoints(difference.toInt()); // num을 int로 변환
     }
   }
 
@@ -32,6 +33,7 @@ class HomePage extends StatelessWidget {
     final userProvider = Provider.of<UserProvider>(context);
 
     if (userProvider.user == null) {
+      userProvider.fetchUserData(); // 서버에서 데이터 가져오기
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -47,8 +49,8 @@ class HomePage extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildUserInfo(userProvider),
-                _buildTokenInfo(userProvider),
+                _buildUserInfo(userProvider.user!),
+                _buildTokenInfo(userProvider.user!),
               ],
             ),
           ),
@@ -173,9 +175,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildUserInfo(UserProvider userProvider) {
-    final user = userProvider.user!;
-
+  Widget _buildUserInfo(Map<String, dynamic> user) {
     return Container(
       decoration: _buildInfoBoxDecoration(),
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
@@ -184,11 +184,16 @@ class HomePage extends StatelessWidget {
           CircleAvatar(
             radius: 24,
             backgroundColor: const Color(0xFFA57C50),
-            child: const Icon(Icons.person, color: Colors.white),
+            backgroundImage: user['profile_image'].startsWith('http')
+                ? NetworkImage(user['profile_image'])
+                : AssetImage(user['profile_image']) as ImageProvider,
+            child: user['profile_image'].isEmpty
+                ? const Icon(Icons.person, color: Colors.white)
+                : null,
           ),
           const SizedBox(width: 8.0),
           Text(
-            user.nickname,
+            user['nickname'],
             style: const TextStyle(
               color: Colors.black,
               fontWeight: FontWeight.bold,
@@ -200,9 +205,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildTokenInfo(UserProvider userProvider) {
-    final user = userProvider.user!;
-
+  Widget _buildTokenInfo(Map<String, dynamic> user) {
     return Container(
       decoration: _buildInfoBoxDecoration(),
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
@@ -215,7 +218,7 @@ class HomePage extends StatelessWidget {
           ),
           const SizedBox(width: 8.0),
           Text(
-            user.points.toString(),
+            user['points'].toString(),
             style: const TextStyle(
               color: Colors.black,
               fontWeight: FontWeight.bold,
