@@ -4,7 +4,7 @@ import 'package:webview_windows/webview_windows.dart'; // Windows용 WebView
 import 'dart:io'; // 플랫폼 확인
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart'; // 로컬 저장소 사용
+import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // 보안 저장소
 import '../main/main_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -18,6 +18,7 @@ class _LoginPageState extends State<LoginPage> {
   final WebViewCookieManager _cookieManager = WebViewCookieManager();
   late WebViewController _webViewController;
   late WebviewController _windowsWebViewController;
+  final FlutterSecureStorage _secureStorage = FlutterSecureStorage(); // 보안 저장소
 
   bool _isWebViewVisible = false;
 
@@ -62,22 +63,92 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _loadNaverLoginPage() async {
-    final response = await http.get(Uri.parse(naverServerUrl));
-    if (response.statusCode == 200) {
-      final naverLoginUrl = response.body;
-      _loadWebView(naverLoginUrl);
-    } else {
-      print('네이버 로그인 URL 로딩 실패');
+    final sessionCookie = await _secureStorage.read(key: 'session_cookie'); // 세션 쿠키 읽기
+
+    try {
+      final response = await http.get(
+        Uri.parse(naverServerUrl),
+        headers: {
+          if (sessionCookie != null) 'Cookie': 'JSESSIONID=$sessionCookie', // 세션 쿠키 포함
+        },
+      );
+      print("Naver Login API Response: Status Code: ${response.statusCode}");
+      print("Naver Login API Response: Body: ${response.body}");
+      if (response.statusCode == 200) {
+        final naverLoginUrl = response.body; // 서버에서 반환된 URL
+        _loadWebView(naverLoginUrl); // WebView로 로드
+      } else {
+        print('네이버 로그인 URL 로딩 실패: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('네이버 로그인 요청 중 오류 발생: $e');
     }
   }
 
   void _loadKakaoLoginPage() async {
-    final response = await http.get(Uri.parse(kakaoServerUrl));
-    if (response.statusCode == 200) {
-      final kakaoLoginUrl = response.body;
-      _loadWebView(kakaoLoginUrl);
-    } else {
-      print('카카오 로그인 URL 로딩 실패');
+    final sessionCookie = await _secureStorage.read(key: 'session_cookie'); // 세션 쿠키 읽기
+    print('Saved Session Cookie: $sessionCookie');
+    try {
+      final response = await http.get(
+        Uri.parse(kakaoServerUrl),
+        headers: {
+          if (sessionCookie != null) 'Cookie': 'JSESSIONID=$sessionCookie', // 세션 쿠키 포함
+        },
+      );
+      print("Kakao Login API Response: Status Code: ${response.statusCode}");
+      print("Kakao Login API Response: Body: ${response.body}");
+      if (response.statusCode == 200) {
+        final kakaoLoginUrl = response.body; // 서버에서 반환된 URL
+        _loadWebView(kakaoLoginUrl); // WebView로 로드
+      } else {
+        print('카카오 로그인 URL 로딩 실패: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('카카오 로그인 요청 중 오류 발생: $e');
+    }
+  }
+
+  void _handleRedirectUri(String url, {required bool isNaver}) async {
+    print("Handling Redirect for URL: $url");
+    if (Platform.isWindows) {
+      await _windowsWebViewController.dispose();
+    }
+    setState(() {
+      _isWebViewVisible = false;
+    });
+
+    try {
+      final sessionCookie = await _secureStorage.read(key: 'session_cookie');
+
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          if (sessionCookie != null) 'Cookie': 'JSESSIONID=$sessionCookie',
+        },
+      );
+      print("Redirect API Response: Status Code: ${response.statusCode}");
+      print("Redirect API Response: Body: ${response.body}");
+      print("Request Headers: ${response.request?.headers}");
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print("Parsed Data from Redirect Response: $data");
+        await _saveUserData(
+          id: data['id'],
+          name: data['name'],
+          profileImage: data['profile_image'],
+          accessToken: data['access_token'],
+          isNew: response.headers['isNew'] == "1",
+          isNaver: isNaver,
+        );
+
+        print('${isNaver ? "네이버" : "카카오"} 로그인 성공: ID=${data['id']}, 토큰=${data['access_token']}');
+        Navigator.pushReplacementNamed(context, '/main');
+      } else {
+        print('로그인 완료 후 토큰 데이터 요청 실패: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Redirect 처리 중 오류 발생: $e');
     }
   }
 
@@ -100,34 +171,6 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  void _handleRedirectUri(String url, {required bool isNaver}) async {
-    if (Platform.isWindows) {
-      await _windowsWebViewController.dispose();
-    }
-    setState(() {
-      _isWebViewVisible = false;
-    });
-
-    final response = await http.post(Uri.parse(url));
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      await _saveUserData(
-        id: data['id'],
-        name: data['name'],
-        profileImage: data['profile_image'],
-        accessToken: data['access_token'],
-        isNew: response.headers['isNew'] == "1",
-        isNaver: isNaver,
-      );
-
-      print('${isNaver ? "네이버" : "카카오"} 로그인 성공: ID=${data['id']}, 토큰=${data['access_token']}');
-
-      Navigator.pushReplacementNamed(context, '/main');
-    } else {
-      print('로그인 완료 후 토큰 데이터 요청 실패');
-    }
-  }
-
   Future<void> _saveUserData({
     required String id,
     required String name,
@@ -136,14 +179,12 @@ class _LoginPageState extends State<LoginPage> {
     required bool isNew,
     required bool isNaver,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
-
-    await prefs.setString('userId', id);
-    await prefs.setString('userName', name);
-    await prefs.setString('profileImage', profileImage);
-    await prefs.setString('accessToken', accessToken);
-    await prefs.setBool('isNew', isNew);
-    await prefs.setString('provider', isNaver ? 'naver' : 'kakao');
+    await _secureStorage.write(key: 'userId', value: id);
+    await _secureStorage.write(key: 'userName', value: name);
+    await _secureStorage.write(key: 'profileImage', value: profileImage);
+    await _secureStorage.write(key: 'accessToken', value: accessToken);
+    await _secureStorage.write(key: 'isNew', value: isNew.toString());
+    await _secureStorage.write(key: 'provider', value: isNaver ? 'naver' : 'kakao');
 
     print('사용자 데이터가 저장되었습니다.');
   }

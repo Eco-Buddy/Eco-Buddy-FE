@@ -91,8 +91,14 @@ class _StartPageState extends State<StartPage> {
       if (response.statusCode == 200) {
         final cookies = response.headers['set-cookie'];
         if (cookies != null) {
-          await _secureStorage.write(key: 'session_cookie', value: cookies);
-          print('Session cookie saved: $cookies');
+          // JSESSIONID 추출
+          final sessionId = RegExp(r'JSESSIONID=([^;]+)').firstMatch(cookies)?.group(1);
+          if (sessionId != null) {
+            await _secureStorage.write(key: 'session_cookie', value: sessionId);
+            print('Session cookie saved: $sessionId');
+          } else {
+            print('JSESSIONID not found in Set-Cookie header.');
+          }
         }
 
         final isNew = response.headers['isNew'];
@@ -113,6 +119,30 @@ class _StartPageState extends State<StartPage> {
         errorMessage = 'Error sending Device ID';
       });
     }
+  }
+
+  Future<void> _checkExistingSession() async {
+    final existingCookie = await _secureStorage.read(key: 'session_cookie');
+    if (existingCookie != null) {
+      print('기존 세션 쿠키 발견: $existingCookie');
+      Navigator.pushReplacementNamed(context, '/main');
+    } else {
+      print('세션 쿠키가 없습니다. 새로운 세션 생성이 필요합니다.');
+      _fetchDeviceId();
+    }
+  }
+
+  Future<bool> _validateSessionCookie() async {
+    final existingCookie = await _secureStorage.read(key: 'session_cookie');
+    if (existingCookie == null) return false;
+
+    final url = Uri.parse('$baseUrl/validate_session'); // 유효성 검사 엔드포인트
+    final response = await http.get(
+      url,
+      headers: {'Cookie': 'JSESSIONID=$existingCookie'},
+    );
+
+    return response.statusCode == 200;
   }
 
   @override
