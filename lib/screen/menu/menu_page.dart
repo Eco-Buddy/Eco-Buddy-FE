@@ -1,74 +1,109 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../provider/user_provider.dart';
+import 'package:webview_flutter/webview_flutter.dart'; // For Android WebView
+import 'package:webview_windows/webview_windows.dart'; // For Windows WebView
+import 'dart:io'; // For platform check
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // Secure storage
 
-class MenuPage extends StatelessWidget {
+class MenuPage extends StatefulWidget {
   const MenuPage({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final userProvider = Provider.of<UserProvider>(context);
+  _MenuPageState createState() => _MenuPageState();
+}
 
-    if (userProvider.user == null) {
-      userProvider.fetchUserData(); // 서버에서 사용자 데이터 가져오기
-      return const Center(child: CircularProgressIndicator());
+class _MenuPageState extends State<MenuPage> {
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  WebViewController? _androidWebViewController; // For Android WebView
+  WebviewController? _windowsWebViewController; // For Windows WebView
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeWebView();
+  }
+
+  Future<void> _initializeWebView() async {
+    if (Platform.isAndroid) {
+      _androidWebViewController = WebViewController()
+        ..setJavaScriptMode(JavaScriptMode.unrestricted);
+      print("✅ Android WebView 초기화 성공");
+    } else if (Platform.isWindows) {
+      _windowsWebViewController = WebviewController();
+      await _windowsWebViewController!.initialize();
+      setState(() {
+        _isInitialized = true;
+      });
+      print("✅ Windows WebView 초기화 성공");
+    } else {
+      print("⚠️ WebView 지원되지 않는 플랫폼");
     }
+  }
 
-    final user = userProvider.user!;
+  Future<void> _logout() async {
+    try {
+      // Retrieve stored data
+      final provider = await _secureStorage.read(key: 'provider');
+      final accessToken = await _secureStorage.read(key: 'accessToken');
 
+      // Call logout API
+      if (provider != null && accessToken != null) {
+        final response = await http.post(
+          Uri.parse('http://223.130.162.100:4525/$provider/logout'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'access_token': accessToken}),
+        );
+
+        if (response.statusCode == 200) {
+          print('✅ 로그아웃 성공');
+        } else {
+          print('❌ 로그아웃 실패: ${response.statusCode}');
+        }
+      }
+
+      // Clear secure storage
+      await _secureStorage.deleteAll();
+      print('🔑 Secure storage cleared.');
+
+      // Clear WebView cookies and cache
+      if (Platform.isAndroid && _androidWebViewController != null) {
+        await _androidWebViewController!.clearCache();
+        print('✅ Android WebView cache cleared.');
+      } else if (Platform.isWindows && _windowsWebViewController != null && _isInitialized) {
+        await _windowsWebViewController!.clearCache();
+        await _windowsWebViewController!.clearCookies();
+        print('✅ Windows WebView cookies and cache cleared.');
+      }
+
+      // Navigate to start page
+      Navigator.pushReplacementNamed(context, '/start');
+    } catch (e) {
+      print('❌ 로그아웃 처리 중 오류 발생: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          '메뉴',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: Colors.green[400],
+        title: const Text('메뉴'),
+        backgroundColor: Colors.green,
       ),
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
-          // 사용자 프로필 카드
-          _buildUserProfile(context, userProvider, user),
+          _buildUserProfile(),
           const SizedBox(height: 16.0),
-          // 메뉴 섹션
           _buildMenuSection(
             title: '일반 설정',
             items: [
               _buildMenuItem(
-                context,
                 icon: Icons.settings,
                 title: '설정',
                 subtitle: '알림, 개인정보 등',
-                onTap: () {
-                  Navigator.pushNamed(context, '/settings');
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 16.0),
-          _buildMenuSection(
-            title: '환경 꿀팁',
-            items: [
-              _buildMenuItem(
-                context,
-                icon: Icons.info,
-                title: '앱 소개',
-                subtitle: '앱에 대해 알아보기',
-                onTap: () {
-                  Navigator.pushNamed(context, '/about');
-                },
-              ),
-              _buildMenuItem(
-                context,
-                icon: Icons.lightbulb,
-                title: '환경 꿀팁',
-                subtitle: '환경을 지키는 꿀팁 확인',
-                onTap: () {
-                  Navigator.pushNamed(context, '/ecoTips');
-                },
+                onTap: () => Navigator.pushNamed(context, '/settings'),
               ),
             ],
           ),
@@ -77,29 +112,10 @@ class MenuPage extends StatelessWidget {
             title: '기타',
             items: [
               _buildMenuItem(
-                context,
-                icon: Icons.notifications,
-                title: '알림 관리',
-                subtitle: '앱 알림 설정',
-                onTap: () {
-                  Navigator.pushNamed(context, '/notifications');
-                },
-              ),
-              _buildMenuItem(
-                context,
-                icon: Icons.help_outline,
-                title: '도움말 / FAQ',
-                subtitle: '자주 묻는 질문',
-                onTap: () {
-                  Navigator.pushNamed(context, '/faq');
-                },
-              ),
-              _buildMenuItem(
-                context,
                 icon: Icons.exit_to_app,
                 title: '로그아웃',
-                subtitle: '현재 계정에서 로그아웃',
-                onTap: () => _logout(context),
+                subtitle: '계정에서 로그아웃',
+                onTap: _logout,
               ),
             ],
           ),
@@ -108,95 +124,35 @@ class MenuPage extends StatelessWidget {
     );
   }
 
-  Widget _buildUserProfile(
-      BuildContext context, UserProvider userProvider, Map<String, dynamic> user) {
+  Widget _buildUserProfile() {
     return Card(
       elevation: 4.0,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 40,
-                  backgroundColor: Colors.grey[300],
-                  backgroundImage: user['profile_image'].startsWith('http')
-                      ? NetworkImage(user['profile_image']) // 프로필 이미지 URL
-                      : AssetImage(user['profile_image']) as ImageProvider, // 로컬 이미지
-                  child: user['profile_image'].isEmpty
-                      ? const Icon(Icons.person, size: 40, color: Colors.white)
-                      : null, // 기본 아이콘 표시
+            CircleAvatar(
+              radius: 40,
+              backgroundColor: Colors.grey[300],
+              child: const Icon(Icons.person, size: 40, color: Colors.white),
+            ),
+            const SizedBox(width: 16.0),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  '사용자 이름',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(width: 16.0),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user['nickname'],
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text('레벨: ${user['level']}',
-                        style: const TextStyle(fontSize: 16)),
-                    Text('칭호: ${user['title']}',
-                        style: const TextStyle(fontSize: 16)),
-                  ],
+                Text(
+                  '레벨: 1',
+                  style: TextStyle(fontSize: 16),
                 ),
               ],
-            ),
-            IconButton(
-              icon: const Icon(Icons.edit, color: Colors.green),
-              onPressed: () => _showNameChangeDialog(context, userProvider),
             ),
           ],
         ),
       ),
-    );
-  }
-
-  void _showNameChangeDialog(BuildContext context, UserProvider userProvider) {
-    final TextEditingController nameController =
-    TextEditingController(text: userProvider.user?['nickname'] ?? '');
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('이름 변경'),
-          content: TextField(
-            controller: nameController,
-            decoration: const InputDecoration(labelText: '새로운 이름 입력'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('취소'),
-            ),
-            TextButton(
-              onPressed: () {
-                final newName = nameController.text.trim();
-                if (newName.isNotEmpty) {
-                  userProvider.updateUserName(newName); // 서버에 업데이트
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('변경'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _logout(BuildContext context) {
-    Navigator.pushReplacementNamed(
-      context,
-      '/login',
-      arguments: {'clearCookies': true},
     );
   }
 
@@ -220,13 +176,12 @@ class MenuPage extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuItem(
-      BuildContext context, {
-        required IconData icon,
-        required String title,
-        required String subtitle,
-        required VoidCallback onTap,
-      }) {
+  Widget _buildMenuItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
     return Card(
       child: ListTile(
         leading: Icon(icon, color: Colors.green, size: 36),
@@ -234,7 +189,6 @@ class MenuPage extends StatelessWidget {
           title,
           style: const TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.black,
           ),
         ),
         subtitle: Text(subtitle),

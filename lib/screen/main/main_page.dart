@@ -17,7 +17,7 @@ class _MainPageState extends State<MainPage> {
   final List<Widget> pages = [
     const StatsPage(),  // 통계 페이지
     HomePage(),   // 홈 페이지
-    const MenuPage(),   // 메뉴 페이지
+    MenuPage(),   // 메뉴 페이지
   ];
 
   @override
