@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
 import '../../provider/pet_provider.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({Key? key}) : super(key: key);
+
+  final secureStorage = const FlutterSecureStorage();
+
+  Future<String> _loadProfileImage() async {
+    final profileImage = await secureStorage.read(key: 'profileImage');
+    return profileImage ?? ''; // 기본값으로 빈 문자열 반환
+  }
 
   void _completeMission(BuildContext context) async {
     final petProvider = Provider.of<PetProvider>(context, listen: false);
@@ -38,27 +46,41 @@ class HomePage extends StatelessWidget {
 
     final pet = petProvider.pet;
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          _buildBackground(),
-          _buildFloor(),
-          Positioned(
-            top: 20,
-            left: 16,
-            right: 16,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildUserProfile(pet?['petName'] ?? '귀여운 펫'),
-                _buildTokenInfo(pet?['points'] ?? 0),
-              ],
-            ),
+    return FutureBuilder<String>(
+      future: _loadProfileImage(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final profileImage = snapshot.data ?? '';
+
+        return Scaffold(
+          body: Stack(
+            children: [
+              _buildBackground(),
+              _buildFloor(),
+              Positioned(
+                top: 20,
+                left: 16,
+                right: 16,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildUserProfile(
+                      pet?['petName'] ?? '귀여운 펫',
+                      profileImage,
+                    ),
+                    _buildTokenInfo(pet?['points'] ?? 0),
+                  ],
+                ),
+              ),
+              _buildIcons(context),
+              _buildCharacter(),
+            ],
           ),
-          _buildIcons(context),
-          _buildCharacter(),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -123,7 +145,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildUserProfile(String petName) {
+  Widget _buildUserProfile(String petName, String profileImage) {
     return Container(
       decoration: _buildInfoBoxDecoration(),
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
@@ -132,7 +154,9 @@ class HomePage extends StatelessWidget {
           CircleAvatar(
             radius: 24,
             backgroundColor: const Color(0xFFA57C50),
-            backgroundImage: const AssetImage('assets/images/default_profile.png'),
+            backgroundImage: profileImage.isNotEmpty
+                ? NetworkImage(profileImage) as ImageProvider
+                : const AssetImage('assets/images/profile/default.png'),
           ),
           const SizedBox(width: 8.0),
           Text(

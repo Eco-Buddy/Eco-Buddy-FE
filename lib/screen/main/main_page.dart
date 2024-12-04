@@ -81,34 +81,6 @@ class _MainPageState extends State<MainPage> {
                 index: currentIndex,
                 children: pages,
               ),
-              Positioned(
-                top: 40,
-                left: 20,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '사용자 ID: $userId',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    profileImage.isNotEmpty
-                        ? CircleAvatar(
-                      backgroundImage: NetworkImage(profileImage),
-                      radius: 30,
-                    )
-                        : const CircleAvatar(
-                      child: Icon(Icons.person),
-                      radius: 30,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '포인트: $points',
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                  ],
-                ),
-              ),
             ],
           );
         },
