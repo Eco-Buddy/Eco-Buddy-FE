@@ -19,8 +19,8 @@ class _LoginPageState extends State<LoginPage> {
   WebviewController? _windowsWebViewController; // Windows WebView Controller
   bool _isWebViewVisible = false;
 
-  final String naverServerUrl = 'http://ecobuddy.kro.kr:4525/login/request/naver';
-  final String kakaoServerUrl = 'http://ecobuddy.kro.kr:4525/login/request/kakao';
+  final String naverServerUrl = 'http://223.130.162.100:4525/login/request/naver';
+  final String kakaoServerUrl = 'http://223.130.162.100:4525/login/request/kakao';
 
   @override
   void initState() {
@@ -106,7 +106,6 @@ class _LoginPageState extends State<LoginPage> {
   void _loadKakaoLoginPage() => _loadLoginPage(kakaoServerUrl);
 
   void _handleRedirectUri(String url, {required bool isNaver}) async {
-    print('🔍 Redirect URI: $url');
     setState(() {
       _isWebViewVisible = false;
     });
@@ -120,9 +119,6 @@ class _LoginPageState extends State<LoginPage> {
           if (sessionCookie != null) 'Cookie': 'JSESSIONID=$sessionCookie',
         },
       );
-      print('🔍 Response Status: ${response.statusCode}');
-      print('🔍 Response Body: ${response.body}');
-
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['id'] != null && data['access_token'] != null) {
@@ -149,10 +145,10 @@ class _LoginPageState extends State<LoginPage> {
           print('❌ 데이터가 올바르지 않습니다: $data');
         }
       } else {
-        print('❌ Redirect 실패: ${response.statusCode}');
+        print('로그인 완료 후 토큰 데이터 요청 실패: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Redirect 처리 중 오류 발생: $e');
+      print('Redirect 처리 중 오류 발생: $e');
     }
   }
 
