@@ -126,16 +126,25 @@ class _LoginPageState extends State<LoginPage> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['id'] != null && data['access_token'] != null) {
+          final isNew = response.headers['isNew'] == "1"; // isNew 값을 가져옴
+
           await _saveUserData(
             id: data['id'],
             name: data['name'] ?? '',
             profileImage: data['profile_image'] ?? '',
             accessToken: data['access_token'],
-            isNew: response.headers['isNew'] == "1",
+            isNew: isNew, // 추가된 부분
             isNaver: isNaver,
           );
-          print('✅ Redirect 성공, Main 페이지로 이동');
-          Navigator.pushReplacementNamed(context, '/main');
+
+          // 페이지 이동 로직
+          if (isNew) {
+            print('🆕 신규 회원입니다. Newbie 페이지로 이동합니다.');
+            Navigator.pushReplacementNamed(context, '/newbie');
+          } else {
+            print('✅ 기존 회원입니다. Main 페이지로 이동합니다.');
+            Navigator.pushReplacementNamed(context, '/main');
+          }
         } else {
           print('❌ 데이터가 올바르지 않습니다: $data');
         }

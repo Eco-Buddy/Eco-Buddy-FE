@@ -1,41 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../provider/user_provider.dart';
-import '../shop/shop_modal.dart';
-import 'mission_dialog.dart';
+import '../../provider/pet_provider.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({Key? key}) : super(key: key);
 
-  void _openShopModal(BuildContext context) async {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
+  void _completeMission(BuildContext context) async {
+    final petProvider = Provider.of<PetProvider>(context, listen: false);
 
-    // 모달에서 남은 포인트를 반환받아 업데이트
-    final updatedPoints = await showModalBottomSheet<int>(
+    // 미션 완료 시 포인트 100 증가
+    await petProvider.updatePoints(100);
+
+    // 완료 알림
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
-      ),
-      builder: (context) => ShopModal(
-        currentPoints: userProvider.user?['points'] ?? 0, // 현재 포인트 전달
+      builder: (context) => AlertDialog(
+        title: const Text('미션 완료!'),
+        content: const Text('축하합니다! 100 포인트가 추가되었습니다.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('확인'),
+          ),
+        ],
       ),
     );
-
-    if (updatedPoints != null) {
-      final difference = updatedPoints - (userProvider.user?['points'] ?? 0);
-      userProvider.updateUserPoints(difference.toInt()); // num을 int로 변환
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final userProvider = Provider.of<UserProvider>(context);
+    final petProvider = Provider.of<PetProvider>(context);
 
-    if (userProvider.user == null) {
-      userProvider.fetchUserData(); // 서버에서 데이터 가져오기
+    if (!petProvider.isInitialized) {
+      // 초기 로딩 중일 때 로딩 화면 표시
       return const Center(child: CircularProgressIndicator());
     }
+
+    final pet = petProvider.pet;
 
     return Scaffold(
       body: Stack(
@@ -49,14 +50,13 @@ class HomePage extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildUserInfo(userProvider.user!),
-                _buildTokenInfo(userProvider.user!),
+                _buildUserProfile(pet?['petName'] ?? '귀여운 펫'),
+                _buildTokenInfo(pet?['points'] ?? 0),
               ],
             ),
           ),
           _buildIcons(context),
-          _buildCharacter(context),
-          _buildTrashButton(context),
+          _buildCharacter(),
         ],
       ),
     );
@@ -93,12 +93,16 @@ class HomePage extends StatelessWidget {
         children: [
           _buildIconButton(
             'assets/images/icon/shop_icon.png',
-            onTap: () => _openShopModal(context),
+            onTap: () {
+              // 상점 버튼 클릭 처리
+              print("Shop Icon Clicked");
+            },
           ),
           const SizedBox(height: 8),
           _buildIconButton(
             'assets/images/icon/custom_icon.png',
             onTap: () {
+              // 커스텀 버튼 클릭 처리
               print("Custom Icon Clicked");
             },
           ),
@@ -107,10 +111,10 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildCharacter(BuildContext context) {
+  Widget _buildCharacter() {
     return Positioned(
-      top: MediaQuery.of(context).size.height * 0.56,
-      left: (MediaQuery.of(context).size.width - 160) / 2,
+      top: 300,
+      left: (MediaQueryData.fromWindow(WidgetsBinding.instance.window).size.width - 160) / 2,
       child: Image.asset(
         'assets/images/character/happy-1.png',
         width: 160,
@@ -119,63 +123,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildTrashButton(BuildContext context) {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-
-    return Positioned(
-      bottom: 150,
-      left: MediaQuery.of(context).size.width * 0.1,
-      child: GestureDetector(
-        onTap: () => _showMissionPopup(context, userProvider),
-        child: Image.asset(
-          'assets/images/trash/trash_1.png',
-          width: 60,
-          height: 60,
-        ),
-      ),
-    );
-  }
-
-  void _showMissionPopup(BuildContext context, UserProvider userProvider) {
-    showDialog(
-      context: context,
-      builder: (context) => MissionDialog(
-        title: '쓰레기 치우기',
-        missionRequest: '다음 미션을 수행해 쓰레기를 치워주세요!',
-        missionContent: '메일 20개 삭제',
-        missionDescription:
-        '메일 1개당 4g의 탄소발자국이 발생합니다.\n20개면 80g을 줄일 수 있겠네요!',
-        onComplete: () {
-          Navigator.pop(context);
-          userProvider.updateUserPoints(100);
-          _showCompletionDialog(context);
-        },
-        onLater: () {
-          Navigator.pop(context);
-        },
-      ),
-    );
-  }
-
-  void _showCompletionDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('미션 완료!'),
-        content: const Text('축하합니다! 보상을 획득했습니다. (+100 포인트)'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: const Text('확인'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUserInfo(Map<String, dynamic> user) {
+  Widget _buildUserProfile(String petName) {
     return Container(
       decoration: _buildInfoBoxDecoration(),
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
@@ -184,16 +132,11 @@ class HomePage extends StatelessWidget {
           CircleAvatar(
             radius: 24,
             backgroundColor: const Color(0xFFA57C50),
-            backgroundImage: user['profile_image'].startsWith('http')
-                ? NetworkImage(user['profile_image'])
-                : AssetImage(user['profile_image']) as ImageProvider,
-            child: user['profile_image'].isEmpty
-                ? const Icon(Icons.person, color: Colors.white)
-                : null,
+            backgroundImage: const AssetImage('assets/images/default_profile.png'),
           ),
           const SizedBox(width: 8.0),
           Text(
-            user['nickname'],
+            petName,
             style: const TextStyle(
               color: Colors.black,
               fontWeight: FontWeight.bold,
@@ -205,7 +148,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildTokenInfo(Map<String, dynamic> user) {
+  Widget _buildTokenInfo(int points) {
     return Container(
       decoration: _buildInfoBoxDecoration(),
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
@@ -214,11 +157,11 @@ class HomePage extends StatelessWidget {
           CircleAvatar(
             radius: 24,
             backgroundColor: Colors.transparent,
-            backgroundImage: AssetImage('assets/images/icon/leaf_token.png'),
+            backgroundImage: const AssetImage('assets/images/icon/leaf_token.png'),
           ),
           const SizedBox(width: 8.0),
           Text(
-            user['points'].toString(),
+            points.toString(),
             style: const TextStyle(
               color: Colors.black,
               fontWeight: FontWeight.bold,
@@ -236,7 +179,7 @@ class HomePage extends StatelessWidget {
       child: Container(
         width: 80,
         height: 80,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           shape: BoxShape.circle,
           color: Colors.transparent,
         ),

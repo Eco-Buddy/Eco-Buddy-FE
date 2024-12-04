@@ -1,12 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../stats/digital_carbon_page.dart';
 import '../stats/windows_display.dart';
 import '../stats/window_initializer.dart';
 import '../home/home_page.dart';
 import '../menu/menu_page.dart';
 import '../../common/widget/custom_bottom_bar.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({Key? key}) : super(key: key);
@@ -16,15 +16,16 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
+  final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
   final initializer = WindowInitializer();
-
   int currentIndex = 1; // 기본 선택된 탭: 홈 페이지
 
-
-  // 페이지를 플랫폼에 따라 나누기
   Widget get statsPage {
     if (Platform.isWindows) {
-      return DisplayUsagePage(updateDailyUsage: initializer.updateDailyUsage, updateHourlyUsage: initializer.updateHourlyUsage);// 윈도우용 페이지
+      return DisplayUsagePage(
+        updateDailyUsage: initializer.updateDailyUsage,
+        updateHourlyUsage: initializer.updateHourlyUsage,
+      ); // 윈도우용 페이지
     } else if (Platform.isAndroid) {
       return DataUsagePage(); // 안드로이드용 페이지
     } else {
@@ -39,17 +40,78 @@ class _MainPageState extends State<MainPage> {
     super.initState();
     pages = [
       statsPage, // 통계 페이지 (플랫폼별로 다름)
-      HomePage(), // 홈 페이지
+      const HomePage(), // 홈 페이지
       const MenuPage(), // 메뉴 페이지
     ];
+  }
+
+  Future<Map<String, String?>> _loadUserData() async {
+    final userId = await secureStorage.read(key: 'userId');
+    final profileImage = await secureStorage.read(key: 'profileImage');
+    final points = await secureStorage.read(key: 'points');
+    return {
+      'userId': userId ?? '알 수 없음',
+      'profileImage': profileImage ?? '',
+      'points': points ?? '0',
+    };
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: currentIndex, // 현재 선택된 페이지 표시
-        children: pages,     // 페이지 리스트
+      body: FutureBuilder<Map<String, String?>>(
+        future: _loadUserData(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(child: Text('오류 발생: ${snapshot.error}'));
+          }
+
+          final data = snapshot.data ?? {};
+          final userId = data['userId']!;
+          final profileImage = data['profileImage']!;
+          final points = data['points']!;
+
+          return Stack(
+            children: [
+              IndexedStack(
+                index: currentIndex,
+                children: pages,
+              ),
+              Positioned(
+                top: 40,
+                left: 20,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '사용자 ID: $userId',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    profileImage.isNotEmpty
+                        ? CircleAvatar(
+                      backgroundImage: NetworkImage(profileImage),
+                      radius: 30,
+                    )
+                        : const CircleAvatar(
+                      child: Icon(Icons.person),
+                      radius: 30,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '포인트: $points',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
       bottomNavigationBar: CustomBottomBar(
         currentIndex: currentIndex,
