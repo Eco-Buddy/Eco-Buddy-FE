@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // SecureStorage import
-import 'provider/pet_provider.dart';
+import 'provider/pet_provider.dart'; // PetProvider import
 import 'screen/start/start_page.dart'; // StartPage import
 import 'screen/login/login_page.dart'; // LoginPage import
 import 'screen/login/newbie.dart'; // NewbiePage import
@@ -94,12 +94,12 @@ class MyApp extends StatelessWidget {
   // PetProvider 초기화 로직
   Future<void> _initializePetProvider(PetProvider petProvider) async {
     // 1. 로컬 데이터 로드
-    await petProvider.loadLocalData();
+    await petProvider.loadLocalPetData();
 
-    // 2. 서버 동기화 작업
+    // 2. 서버 동기화 작업 (유저 인증 정보가 있을 경우)
     final userId = await secureStorage.read(key: 'userId');
     if (userId != null) {
-      await petProvider.fetchPetData();
+      await petProvider.loadPetDataFromServer();
     }
   }
 }

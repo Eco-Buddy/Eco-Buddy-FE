@@ -13,35 +13,15 @@ class HomePage extends StatelessWidget {
     return profileImage ?? ''; // 기본값으로 빈 문자열 반환
   }
 
-  void _completeMission(BuildContext context) async {
-    final petProvider = Provider.of<PetProvider>(context, listen: false);
-
-    // 미션 완료 시 포인트 100 증가
-    await petProvider.updatePoints(100);
-
-    // 완료 알림
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('미션 완료!'),
-        content: const Text('축하합니다! 100 포인트가 추가되었습니다.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('확인'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final petProvider = Provider.of<PetProvider>(context);
 
     if (!petProvider.isInitialized) {
-      // 초기 로딩 중일 때 로딩 화면 표시
-      return const Center(child: CircularProgressIndicator());
+      // PetProvider 초기화 중 로딩 화면 표시
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
 
     final pet = petProvider.pet;
@@ -50,7 +30,10 @@ class HomePage extends StatelessWidget {
       future: _loadProfileImage(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          // 프로필 이미지 로딩 중 로딩 화면 표시
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
 
         final profileImage = snapshot.data ?? '';
@@ -68,10 +51,10 @@ class HomePage extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _buildUserProfile(
-                      pet?['petName'] ?? '귀여운 펫',
+                      pet?.petName ?? '귀여운 펫', // Pet 닉네임 표시
                       profileImage,
                     ),
-                    _buildTokenInfo(pet?['points'] ?? 0),
+                    _buildTokenInfo(pet?.points ?? 0), // Pet 포인트 표시
                   ],
                 ),
               ),

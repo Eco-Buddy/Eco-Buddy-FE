@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:provider/provider.dart'; // Provider import
 import '../stats/digital_carbon_page.dart';
 import '../stats/windows_display.dart';
 import '../stats/window_initializer.dart';
@@ -17,11 +18,8 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
   final initializer = WindowInitializer();
-  late PetProvider petProvider; // PetProvider를 MainPage에서 직접 관리
   int currentIndex = 1; // 기본 선택된 탭: 홈 페이지
-
   bool isLoading = true; // 로딩 상태
   bool hasError = false; // 에러 상태
 
@@ -43,7 +41,6 @@ class _MainPageState extends State<MainPage> {
   @override
   void initState() {
     super.initState();
-    petProvider = PetProvider(secureStorage: secureStorage); // PetProvider 초기화
     pages = [
       statsPage, // 통계 페이지 (플랫폼별로 다름)
       const HomePage(), // 홈 페이지
@@ -53,17 +50,19 @@ class _MainPageState extends State<MainPage> {
   }
 
   Future<void> _initializePetData() async {
-    try {
-      // 로컬 데이터 로드
-      await petProvider.loadLocalData();
+    final petProvider = Provider.of<PetProvider>(context, listen: false); // Provider 사용
 
-      // 로컬에 데이터가 없으면 서버에서 데이터 가져오기
-      if (petProvider.pet == null) {
-        await petProvider.fetchPetData();
-      }
+    try {
+      // 서버에서 데이터 가져오기 (항상 실행)
+      await petProvider.loadPetDataFromServer();
+
+      // 가져온 데이터를 로컬 저장소에 저장
+      await petProvider.savePetDataToServer();
     } catch (e) {
       print('❌ 펫 데이터 초기화 중 오류 발생: $e');
-      hasError = true;
+      setState(() {
+        hasError = true;
+      });
     } finally {
       setState(() {
         isLoading = false; // 로딩 상태 종료
