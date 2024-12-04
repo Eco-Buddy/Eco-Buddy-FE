@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:unique_identifier/unique_identifier.dart';
 
 // 서버 기본 주소
 const String baseUrl = 'http://ecobuddy.kro.kr:4525';
@@ -45,14 +47,29 @@ class _StartPageState extends State<StartPage> {
 
     try {
       if (Platform.isAndroid) {
-        final androidInfo = await deviceInfo.androidInfo;
-        id = androidInfo.id ?? 'unknown';
+        try {
+          id = (await UniqueIdentifier.serial)!;
+        } on PlatformException {
+          id = 'Failed to get Unique Identifier';
+        }
+        try {
+          await _secureStorage.write(key: 'deviceId', value: id);
+          print('Access Token 저장 완료');
+        } catch (e) {
+          print('Access Token 저장 실패: $e');
+        }
       } else if (Platform.isIOS) {
         final iosInfo = await deviceInfo.iosInfo;
         id = iosInfo.identifierForVendor ?? 'unknown';
       } else if (Platform.isWindows) {
         final windowsInfo = await deviceInfo.windowsInfo;
-        id = windowsInfo.deviceId ?? 'unknown';
+        id = windowsInfo.deviceId ?? 'unknown'; // Windows ID 가져오기
+        try {
+          await _secureStorage.write(key: 'deviceId', value: id);
+          print('Access Token 저장 완료');
+        } catch (e) {
+          print('Access Token 저장 실패: $e');
+        }
       }
     } catch (e) {
       setState(() {
