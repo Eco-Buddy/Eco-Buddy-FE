@@ -45,45 +45,12 @@ class _MainPageState extends State<MainPage> {
     ];
   }
 
-  Future<Map<String, String?>> _loadUserData() async {
-    final userId = await secureStorage.read(key: 'userId');
-    final profileImage = await secureStorage.read(key: 'profileImage');
-    final points = await secureStorage.read(key: 'points');
-    return {
-      'userId': userId ?? '알 수 없음',
-      'profileImage': profileImage ?? '',
-      'points': points ?? '0',
-    };
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: FutureBuilder<Map<String, String?>>(
-        future: _loadUserData(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return Center(child: Text('오류 발생: ${snapshot.error}'));
-          }
-
-          final data = snapshot.data ?? {};
-          final userId = data['userId']!;
-          final profileImage = data['profileImage']!;
-          final points = data['points']!;
-
-          return Stack(
-            children: [
-              IndexedStack(
-                index: currentIndex,
-                children: pages,
-              ),
-            ],
-          );
-        },
+      body: IndexedStack(
+        index: currentIndex,
+        children: pages,
       ),
       bottomNavigationBar: CustomBottomBar(
         currentIndex: currentIndex,
