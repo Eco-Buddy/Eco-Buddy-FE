@@ -15,7 +15,10 @@ class Pet {
     required this.experience,
     required this.points,
   });
-
+  @override
+  String toString() {
+    return 'Pet(petName: $petName, petLevel: $petLevel, experience: $experience, points: $points)';
+  }
   // JSON에서 Pet 객체로 변환
   factory Pet.fromJson(Map<String, dynamic> json) {
     return Pet(
@@ -49,19 +52,22 @@ class PetProvider with ChangeNotifier {
   /// **Load Pet Data from Server**
   Future<void> loadPetDataFromServer() async {
     final accessToken = await secureStorage.read(key: 'accessToken');
-    final deviceId = await secureStorage.read(key: 'deviceId');
     final userId = await secureStorage.read(key: 'userId');
+    final deviceId = await secureStorage.read(key: 'deviceId');
 
-    if (accessToken == null || deviceId == null || userId == null) {
-      print('❌ PetProvider: 인증 정보가 없습니다.');
-      isInitialized = true;
-      notifyListeners();
+    print('Test');
+    print('AccessToken: $accessToken');
+    print('UserId: $userId');
+    print('DeviceId: $deviceId');
+
+    if (accessToken == null || userId == null || deviceId == null) {
+      print('❌ 인증 정보가 없습니다.');
       return;
     }
 
     try {
       final response = await http.post(
-        Uri.parse('http://ecobuddy.kro.kr:4525/pet/load'),
+        Uri.parse('http://223.130.162.100:4525/pet/load'),
         headers: {
           'authorization': accessToken,
           'deviceId': deviceId,
@@ -71,25 +77,16 @@ class PetProvider with ChangeNotifier {
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-
-        _pet = Pet.fromJson(responseData);
-
-        // SecureStorage에 저장
-        await secureStorage.write(
-          key: 'petData',
-          value: jsonEncode(_pet!.toJson()),
-        );
-
-        print('✅ 펫 데이터 로드 성공 및 저장 완료: $_pet');
+        print('✅ 서버에서 가져온 데이터: $responseData');
+        _pet = Pet.fromJson(responseData['pet']);
+        await updateLocalPetData(_pet!);
+        notifyListeners();
       } else {
-        print('❌ 펫 데이터 로드 실패: ${response.statusCode}');
+        print('❌ 서버 응답 오류: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ 펫 데이터 로드 중 오류 발생: $e');
+      print('❌ 데이터 로드 중 오류 발생: $e');
     }
-
-    isInitialized = true;
-    notifyListeners();
   }
 
   /// **Save Modified Pet Data to Server**
@@ -115,8 +112,11 @@ class PetProvider with ChangeNotifier {
           'authorization': accessToken,
           'deviceId': deviceId,
           'userId': userId,
+          'Content-Type': 'application/json', // Content-Type 추가
         },
-        body: jsonEncode(_pet!.toJson()),
+        body: jsonEncode({
+          'pet': _pet!.toJson(), // 서버가 기대하는 구조에 맞게 수정
+        }),
       );
 
       if (response.statusCode == 200) {
@@ -127,10 +127,11 @@ class PetProvider with ChangeNotifier {
           key: 'accessToken',
           value: responseData['new_accessToken'],
         );
-
+        await updateLocalPetData(_pet!);
         print('✅ 펫 데이터 서버 저장 성공: 새로운 AccessToken 저장 완료');
       } else {
         print('❌ 펫 데이터 서버 저장 실패: ${response.statusCode}');
+        print('❌ 서버 응답 메시지: ${response.body}');
       }
     } catch (e) {
       print('❌ 펫 데이터 서버 저장 중 오류 발생: $e');

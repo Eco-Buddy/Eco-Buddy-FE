@@ -142,12 +142,16 @@ class _StartPageState extends State<StartPage> {
           }
         }
 
-        final isNew = response.headers['isNew'];
-        if (isNew == '1') {
+        final userId = await _secureStorage.read(key: 'userId');
+        final accessToken = await _secureStorage.read(key: 'accessToken');
+
+// SecureStorage에 userId와 accessToken이 있는 경우 Main으로 이동
+        if (userId != null && accessToken != null) {
           Navigator.pushReplacementNamed(context, '/main');
         } else {
           Navigator.pushReplacementNamed(context, '/login');
         }
+
       } else {
         setState(() {
           errorMessage = 'Server error: ${response.statusCode}';

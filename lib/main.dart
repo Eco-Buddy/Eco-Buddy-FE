@@ -73,7 +73,7 @@ class MyApp extends StatelessWidget {
       create: (_) {
         // PetProvider에 SecureStorage 전달
         final petProvider = PetProvider(secureStorage: secureStorage);
-        _initializePetProvider(petProvider);
+        //_initializePetProvider(petProvider);
         return petProvider;
       },
       child: MaterialApp(

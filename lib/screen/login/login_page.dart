@@ -121,9 +121,12 @@ class _LoginPageState extends State<LoginPage> {
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        if (data['id'] != null && data['access_token'] != null) {
-          final isNew = response.headers['isNew'] == "1"; // isNew 값을 가져옴
 
+        print('로그인 데이터 테스트');
+        print(response.headers);
+        if (data['id'] != null && data['access_token'] != null) {
+          final isNew = response.headers['isnew'] == "1"; // isNew 값을 가져옴
+          print(isNew);
           await _saveUserData(
             id: data['id'],
             name: data['name'] ?? '',

@@ -54,7 +54,9 @@ class _MainPageState extends State<MainPage> {
 
     try {
       // 서버에서 데이터 가져오기 (항상 실행)
+      print('불러오기 시작');
       await petProvider.loadPetDataFromServer();
+      print('불러오기 완료');
 
       // 가져온 데이터를 로컬 저장소에 저장
       await petProvider.savePetDataToServer();

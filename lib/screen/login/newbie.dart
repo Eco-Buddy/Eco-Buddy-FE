@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class NewbiePage extends StatefulWidget {
   @override
@@ -9,17 +11,58 @@ class NewbiePage extends StatefulWidget {
 class _NewbiePageState extends State<NewbiePage> {
   final _petNameController = TextEditingController();
   final _secureStorage = FlutterSecureStorage();
+  final String serverUrl = 'http://223.130.162.100:4525/pet/create'; // 서버 URL
 
   Future<void> _savePetName() async {
     final petName = _petNameController.text;
+
     if (petName.isNotEmpty) {
-      await _secureStorage.write(key: 'petName', value: petName);
-      print('✅ 펫 이름 저장 완료: $petName');
-      Navigator.pushReplacementNamed(context, '/main');
+      final accessToken = await _secureStorage.read(key: 'accessToken');
+      final deviceId = await _secureStorage.read(key: 'deviceId');
+      final userId = await _secureStorage.read(key: 'userId');
+
+      if (accessToken == null || deviceId == null || userId == null) {
+        print('❌ 인증 정보가 없습니다.');
+        return;
+      }
+
+      final headers = {
+        'authorization': accessToken,
+        'deviceId': deviceId,
+        'userId': userId,
+      };
+
+      final body = {
+        'petName': petName,
+      };
+
+      print('📝 요청 헤더: $headers');
+      print('📝 요청 본문: $body');
+
+      try {
+        final response = await http.post(
+          Uri.parse('http://223.130.162.100:4525/pet/create'),
+          headers: headers,
+          body: body,
+        );
+
+        if (response.statusCode == 200) {
+          print('✅ 서버에 펫 정보 저장 성공: $petName');
+          await _secureStorage.write(key: 'petName', value: petName);
+          Navigator.pushReplacementNamed(context, '/main');
+        } else {
+          print('❌ 서버에 펫 정보 저장 실패: ${response.statusCode}');
+          print('❌ 응답 내용: ${response.body}');
+        }
+      } catch (e) {
+        print('❌ 요청 중 오류 발생: $e');
+      }
     } else {
       print('❌ 펫 이름을 입력해주세요.');
     }
   }
+
+
 
   @override
   Widget build(BuildContext context) {
