@@ -41,7 +41,11 @@ class PetProvider with ChangeNotifier {
     }
 
     try {
-      final response = await http.get(
+      print('authorization: $accessToken');
+      print('deviceId: $deviceId');
+      print('userId: $userId');
+
+      final response = await http.post(
         Uri.parse('http://ecobuddy.kro.kr:4525/pet/load'),
         headers: {
           'authorization': accessToken,

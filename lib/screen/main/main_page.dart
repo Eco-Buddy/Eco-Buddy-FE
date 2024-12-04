@@ -7,6 +7,7 @@ import '../stats/window_initializer.dart';
 import '../home/home_page.dart';
 import '../menu/menu_page.dart';
 import '../../common/widget/custom_bottom_bar.dart';
+import '../../provider/pet_provider.dart'; // PetProvider import
 
 class MainPage extends StatefulWidget {
   const MainPage({Key? key}) : super(key: key);
@@ -18,7 +19,11 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
   final initializer = WindowInitializer();
+  late PetProvider petProvider; // PetProvider를 MainPage에서 직접 관리
   int currentIndex = 1; // 기본 선택된 탭: 홈 페이지
+
+  bool isLoading = true; // 로딩 상태
+  bool hasError = false; // 에러 상태
 
   Widget get statsPage {
     if (Platform.isWindows) {
@@ -38,15 +43,68 @@ class _MainPageState extends State<MainPage> {
   @override
   void initState() {
     super.initState();
+    petProvider = PetProvider(secureStorage: secureStorage); // PetProvider 초기화
     pages = [
       statsPage, // 통계 페이지 (플랫폼별로 다름)
       const HomePage(), // 홈 페이지
       const MenuPage(), // 메뉴 페이지
     ];
+    _initializePetData(); // 펫 데이터 초기화
+  }
+
+  Future<void> _initializePetData() async {
+    try {
+      // 로컬 데이터 로드
+      await petProvider.loadLocalData();
+
+      // 로컬에 데이터가 없으면 서버에서 데이터 가져오기
+      if (petProvider.pet == null) {
+        await petProvider.fetchPetData();
+      }
+    } catch (e) {
+      print('❌ 펫 데이터 초기화 중 오류 발생: $e');
+      hasError = true;
+    } finally {
+      setState(() {
+        isLoading = false; // 로딩 상태 종료
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      // 로딩 화면 표시
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (hasError) {
+      // 에러 화면 표시
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                '펫 데이터를 불러오는 중 오류가 발생했습니다.',
+                style: TextStyle(fontSize: 16, color: Colors.red),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _initializePetData, // 다시 시도 버튼
+                child: const Text('다시 시도'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // 정상적인 페이지 렌더링
     return Scaffold(
       body: IndexedStack(
         index: currentIndex,
