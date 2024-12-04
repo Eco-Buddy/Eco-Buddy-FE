@@ -29,7 +29,7 @@ class UserProvider extends ChangeNotifier {
       final headers = await _buildHeaders();
 
       final response = await http.get(
-        Uri.parse('http://223.130.162.100:4525/api/user'),
+        Uri.parse('http://ecobuddy.kro.kr:4525/api/user'),
         headers: headers,
       );
 
