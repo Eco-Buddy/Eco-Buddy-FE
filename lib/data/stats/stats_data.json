@@ -1,0 +1,12 @@
+{
+  "total_data": 1.8,
+  "wifi_data": 1.2,
+  "mobile_data": 0.6,
+  "time_usage": [
+    {"time": "08:00", "data_used": 0.3},
+    {"time": "10:00", "data_used": 0.4},
+    {"time": "12:00", "data_used": 0.5},
+    {"time": "14:00", "data_used": 0.3},
+    {"time": "16:00", "data_used": 0.3}
+  ]
+}
