@@ -60,11 +60,12 @@ class _BackendDataDisplayState extends State<BackendDataDisplay>
       availableDeviceIds.clear();
     });
 
-    selectedDeviceId = (await _secureStorage.read(key: 'userId')) ?? '';
+    String userId = (await _secureStorage.read(key: 'userId')) ?? '';
+    String deviceId = (await _secureStorage.read(key: 'deviceId')) ?? '';
 
     final url = Uri.parse('http://ecobuddy.kro.kr:4525/devices');
     final headers = {
-      "userId": selectedDeviceId!,
+      "userId": userId,
     };
 
     try {
@@ -73,10 +74,15 @@ class _BackendDataDisplayState extends State<BackendDataDisplay>
       if (response.statusCode == 200) {
         final body = json.decode(response.body);
         final deviceIds = body['deviceIds'] as List<dynamic>;
+
+        final filteredDeviceIds = List<String>.from(deviceIds)
+            .where((id) => id != deviceId)
+            .toList();
+
         setState(() {
-          availableDeviceIds = List<String>.from(deviceIds);
+          availableDeviceIds = filteredDeviceIds;
           if (availableDeviceIds.isNotEmpty) {
-            selectedDeviceId = availableDeviceIds.last;
+            selectedDeviceId = availableDeviceIds.first;
             fetchDeviceData(); // Automatically load data for the first device
           }
         });
@@ -109,13 +115,14 @@ class _BackendDataDisplayState extends State<BackendDataDisplay>
     String devieId = (await _secureStorage.read(key: 'deviceId')) ?? '';
 
     final dailyUrl =
-        Uri.parse('http://ecobuddy.kro.kr:4525/dataUsage/load/daily');
+        Uri.parse('http://ecobuddy.kro.kr:4525/dataUsage/load/other/daily');
     final hourlyUrl =
-        Uri.parse('http://ecobuddy.kro.kr:4525/dataUsage/load/hourly');
+        Uri.parse('http://ecobuddy.kro.kr:4525/dataUsage/load/other/hourly');
     final headers = {
       "authorization": accessToken,
       "userId": userId,
       "deviceId": devieId,
+      "searchDeviceId": selectedDeviceId!,
     };
 
     try {
