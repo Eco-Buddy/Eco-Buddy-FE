@@ -22,8 +22,8 @@ class DisplayUsagePage extends StatefulWidget {
 }
 
 class _DisplayUsagePageState extends State<DisplayUsagePage> with SingleTickerProviderStateMixin{
-  double todaySend = 0.0;
-  double todayReceive = 0.0;
+  double todayWifi = 0.0;
+  double todayEthernet = 0.0;
 
   Map<String, Map<String, double>> dailyUsageData = {};
   Map<String, Map<String, double>> weeklyUsageData = {};
@@ -70,8 +70,8 @@ class _DisplayUsagePageState extends State<DisplayUsagePage> with SingleTickerPr
     rawData.forEach((key, value) {
       final Map<String, dynamic> dailyData = value as Map<String, dynamic>;
       newDailyUsageData[key] = {
-        'ReceivedMB': (dailyData['inOctets'] ?? 0) / (1024 * 1024),
-        'SentMB': (dailyData['outOctets'] ?? 0) / (1024 * 1024),
+        'ethernet': (dailyData['ethernet'] ?? 0) / (1024 * 1024),
+        'wifi': (dailyData['wifi'] ?? 0) / (1024 * 1024),
       };
     });
 
@@ -84,8 +84,8 @@ class _DisplayUsagePageState extends State<DisplayUsagePage> with SingleTickerPr
     final todayDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
     if (dailyUsageData.containsKey(todayDate)) {
       setState(() {
-        todayReceive = (dailyUsageData[todayDate]?['ReceivedMB'] ?? 0.0) * 11;
-        todaySend = (dailyUsageData[todayDate]?['SentMB'] ?? 0.0) * 11;
+        todayEthernet = (dailyUsageData[todayDate]?['ethernet'] ?? 0.0) * 11;
+        todayWifi = (dailyUsageData[todayDate]?['wifi'] ?? 0.0) * 8.6;
       });
     }
 
@@ -98,8 +98,8 @@ class _DisplayUsagePageState extends State<DisplayUsagePage> with SingleTickerPr
       final Map<String, dynamic> hourlyData = value as Map<String, dynamic>;
       parsedHourlyData.add({
         'hour': double.parse(key.split('-').last), // Extract hour from the key
-        'SentMB': (hourlyData['outOctets'] ?? 0) / (1024 * 1024), // Convert to MB
-        'ReceivedMB': (hourlyData['inOctets'] ?? 0) / (1024 * 1024), // Convert to MB
+        'ethernet': (hourlyData['ethernet'] ?? 0) / (1024 * 1024), // Convert to MB
+        'wifi': (hourlyData['wifi'] ?? 0) / (1024 * 1024), // Convert to MB
       });
     });
 
@@ -138,33 +138,21 @@ class _DisplayUsagePageState extends State<DisplayUsagePage> with SingleTickerPr
           ),
           Padding(
             padding: EdgeInsets.all(6),
-            child: Text(
-              'Send',
-              style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: Colors.black),
-              textAlign: TextAlign.center,
-            ),
+            child: Icon(Icons.signal_cellular_alt,
+                size: 16, color: Colors.green),
           ),
           Padding(
             padding: EdgeInsets.all(6),
-            child: Text(
-              'Receive',
-              style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: Colors.black),
-              textAlign: TextAlign.center,
-            ),
+            child: Icon(Icons.wifi,
+                size: 16, color: Colors.blue),
           ),
         ],
       ),
     ];
 
     weeklyUsageData.forEach((date, usage) {
-      final double received = (usage['ReceivedMB'] ?? 0.0) * 11;
-      final double sent = (usage['SentMB'] ?? 0.0) * 11;
+      final double ethernet = (usage['ethernet'] ?? 0.0) * 11;
+      final double wifi = (usage['wifi'] ?? 0.0) * 8.6;
 
       rows.add(
         TableRow(
@@ -183,7 +171,7 @@ class _DisplayUsagePageState extends State<DisplayUsagePage> with SingleTickerPr
             Padding(
               padding: const EdgeInsets.all(6),
               child: Text(
-                formatCarbonFootprint(received + sent), // Total in MB
+                formatCarbonFootprint(ethernet + wifi),
                 style: const TextStyle(fontSize: 12, color: Colors.black),
                 textAlign: TextAlign.center,
               ),
@@ -191,7 +179,7 @@ class _DisplayUsagePageState extends State<DisplayUsagePage> with SingleTickerPr
             Padding(
               padding: const EdgeInsets.all(6),
               child: Text(
-                formatCarbonFootprint(sent), // Sent in MB
+                formatCarbonFootprint(ethernet),
                 style: const TextStyle(fontSize: 12, color: Colors.green),
                 textAlign: TextAlign.center,
               ),
@@ -199,7 +187,7 @@ class _DisplayUsagePageState extends State<DisplayUsagePage> with SingleTickerPr
             Padding(
               padding: const EdgeInsets.all(6),
               child: Text(
-                formatCarbonFootprint(received), // Received in MB
+                formatCarbonFootprint(wifi),
                 style: const TextStyle(fontSize: 12, color: Colors.blue),
                 textAlign: TextAlign.center,
               ),
@@ -216,8 +204,8 @@ class _DisplayUsagePageState extends State<DisplayUsagePage> with SingleTickerPr
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
     setState(() {
-      todaySend = 0.0;
-      todayReceive = 0.0;
+      todayWifi = 0.0;
+      todayEthernet = 0.0;
     });
     print("SharedPreferences have been reset.");
   }
@@ -271,7 +259,7 @@ class _DisplayUsagePageState extends State<DisplayUsagePage> with SingleTickerPr
                             ),
                           ),
                           Text(
-                            formatCarbonFootprint(todaySend + todayReceive),
+                            formatCarbonFootprint(todayEthernet + todayWifi),
                             style: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
@@ -302,19 +290,27 @@ class _DisplayUsagePageState extends State<DisplayUsagePage> with SingleTickerPr
                         ),
                         child: Column(
                           children: [
-                            const Icon(Icons.upload,
+                            const Icon(Icons.signal_cellular_alt,
                                 color: Colors.green, size: 36),
                             const SizedBox(height: 10),
                             Text(
-                              formatCarbonFootprint(todaySend),
+                              formatCarbonFootprint(todayEthernet),
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.green,
                               ),
                             ),
+                            Text(
+                              formatDataUsage(todayEthernet / 11),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.lightGreen,
+                              ),
+                            ),
                             const Text(
-                              'Send',
+                              'Ethernet',
                               style: TextStyle(
                                   fontSize: 14, color: Colors.black87),
                             ),
@@ -337,19 +333,27 @@ class _DisplayUsagePageState extends State<DisplayUsagePage> with SingleTickerPr
                         ),
                         child: Column(
                           children: [
-                            const Icon(Icons.download,
+                            const Icon(Icons.wifi,
                                 color: Colors.blue, size: 36),
                             const SizedBox(height: 10),
                             Text(
-                              formatCarbonFootprint(todayReceive),
+                              formatCarbonFootprint(todayWifi),
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.blue,
                               ),
                             ),
+                            Text(
+                              formatDataUsage(todayWifi / 8.6),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.lightBlueAccent,
+                              ),
+                            ),
                             const Text(
-                              'Receive',
+                              'WiFi',
                               style: TextStyle(
                                   fontSize: 14, color: Colors.black87),
                             ),
@@ -520,3 +524,13 @@ String formatCarbonFootprint(double value) {
   }
 }
 
+// 유틸리티 2
+String formatDataUsage(double valueInMB) {
+  if (valueInMB >= 1024) {
+    // Convert to GB
+    return '${(valueInMB / 1024).toStringAsFixed(2)} GB';
+  } else {
+    // Keep in MB
+    return '${valueInMB.toStringAsFixed(2)} MB';
+  }
+}

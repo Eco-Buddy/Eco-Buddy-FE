@@ -263,6 +263,15 @@ class _DataUsagePageState extends State<DataUsagePage>
                                         color: Colors.green,
                                       ),
                                     ),
+                                    Text(
+                                      formatDataUsage(
+                                          todayMobileCarbonFootprint / 11),
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.lightGreen,
+                                      ),
+                                    ),
                                     const Text(
                                       'Mobile Data',
                                       style: TextStyle(
@@ -297,6 +306,15 @@ class _DataUsagePageState extends State<DataUsagePage>
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
                                         color: Colors.blue,
+                                      ),
+                                    ),
+                                    Text(
+                                      formatDataUsage(
+                                          todayWifiCarbonFootprint / 8.6),
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.lightBlueAccent,
                                       ),
                                     ),
                                     const Text(
@@ -565,5 +583,16 @@ String formatCarbonFootprint(double value) {
     return '${(value / 1e3).toStringAsFixed(2)} kg'; // Convert to kilograms
   } else {
     return '${value.toStringAsFixed(2)} g'; // Keep in grams
+  }
+}
+
+// 유틸리티 2
+String formatDataUsage(double valueInMB) {
+  if (valueInMB >= 1024) {
+    // Convert to GB
+    return '${(valueInMB / 1024).toStringAsFixed(2)} GB';
+  } else {
+    // Keep in MB
+    return '${valueInMB.toStringAsFixed(2)} MB';
   }
 }

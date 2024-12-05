@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'other_devices_digital_carbon_chart.dart';
 
@@ -281,6 +282,14 @@ class _BackendDataDisplayState extends State<BackendDataDisplay>
                           color: Colors.green,
                         ),
                       ),
+                      Text(
+                        formatDataUsage(todayMobileCarbonFootprint / 11),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.lightGreen,
+                        ),
+                      ),
                       const Text(
                         'Mobile Data',
                         style: TextStyle(fontSize: 14, color: Colors.black87),
@@ -312,6 +321,14 @@ class _BackendDataDisplayState extends State<BackendDataDisplay>
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: Colors.blue,
+                        ),
+                      ),
+                      Text(
+                        formatDataUsage(todayWifiCarbonFootprint / 8.6),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.lightBlueAccent,
                         ),
                       ),
                       const Text(
@@ -471,7 +488,10 @@ class _BackendDataDisplayState extends State<BackendDataDisplay>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Device Data Display'),
+        title: const Text('다른 플랫폼 현황',
+            style: TextStyle(
+            fontWeight: FontWeight.bold),
+      ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -536,12 +556,20 @@ class _BackendDataDisplayState extends State<BackendDataDisplay>
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Colors.red,
+                              color: Colors.grey,
                             ),
                             textAlign: TextAlign.center,
                           ),
                         )
                       else ...[
+                        Text(
+                          "${DateFormat('MM/dd').format(DateTime.now())} 탄소 발자국",
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
                         // 제일 위 컴포넌트
                         buildDailySummary(),
 
@@ -554,6 +582,15 @@ class _BackendDataDisplayState extends State<BackendDataDisplay>
                             endIndent: 16,
                           ),
                         ),
+
+                        const Text(
+                          '일일 탄소 발자국:',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
                         //테이블
                         buildDataTable(),
 
@@ -566,6 +603,15 @@ class _BackendDataDisplayState extends State<BackendDataDisplay>
                             endIndent: 16,
                           ),
                         ),
+
+                        const Text(
+                          '시간별 탄소 발자국:',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
+
                         VisibilityDetector(
                           key: const Key('LineChartVisibilityDetector'),
                           onVisibilityChanged: (info) {
@@ -610,5 +656,16 @@ String formatCarbonFootprint(double value) {
     return '${(value / 1e3).toStringAsFixed(2)} kg'; // Convert to kilograms
   } else {
     return '${value.toStringAsFixed(2)} g'; // Keep in grams
+  }
+}
+
+// 유틸리티 2
+String formatDataUsage(double valueInMB) {
+  if (valueInMB >= 1024) {
+    // Convert to GB
+    return '${(valueInMB / 1024).toStringAsFixed(2)} GB';
+  } else {
+    // Keep in MB
+    return '${valueInMB.toStringAsFixed(2)} MB';
   }
 }

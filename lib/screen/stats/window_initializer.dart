@@ -104,8 +104,6 @@ class WindowInitializer{
 schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:00 /f
 ''';
 
-    print(script);
-
     try {
       final result = await Process.run(
         'powershell',
@@ -125,34 +123,28 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:00 /f
   Future<void> initializeApp() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // Check if this is the first launch
     final isFirstLaunch = prefs.getBool('isFirstLaunch') ?? true;
 
-    // Get the last synced timestamp
     final lastSyncTimestamp = prefs.getString('lastSyncTimestamp');
     final now = DateTime.now();
     final currentDateTime = now.toIso8601String();
 
-    await updateDailyUsage(); // Ensure daily usage is updated
-    await updateHourlyUsage(); // Ensure hourly usage is updated
+    await updateDailyUsage();
+    await updateHourlyUsage();
 
-    // 나중에 바꾸자
+    // 나중에 바꾸자 default false임
     bool needsSync = false;
 
     if (isFirstLaunch) {
-      print("첫 실행");
       needsSync = true;
     } else if (lastSyncTimestamp != null) {
       final lastSyncTime = DateTime.parse(lastSyncTimestamp);
       final durationSinceLastSync = now.difference(lastSyncTime);
 
       if (durationSinceLastSync.inHours >= 1 || now.day != lastSyncTime.day) {
-        print("날이 바뀌었을 때");
         needsSync = true;
       }
     } else {
-      // No previous sync information, assume sync is needed
-      print("lastSynctimestap 값이 없을 때");
       needsSync = true;
     }
 
@@ -172,14 +164,11 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:00 /f
         accessToken: accessToken,
       );
 
-      // Update the last sync timestamp
       prefs.setString('lastSyncTimestamp', currentDateTime);
     }
 
-    // Mark first launch as completed
     prefs.setBool('isFirstLaunch', false);
 
-    scheduleMidnightUpdate(); // Schedule the next midnight update
     scheduleHourlyUpdate(); // Schedule hourly updates
 
     createHourlyTask(); // Create the task for future executions
@@ -194,39 +183,39 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:00 /f
     }
   }
 
-  Future<void> saveDebugOutput(Map<String, int> currentTotals) async {
-    try {
-      // Retrieve SharedPreferences instance
-      final prefs = await SharedPreferences.getInstance();
-
-      // Gather all preference keys and values
-      final Map<String, dynamic> allPreferences = {
-        "weeklyDataUsage": prefs.getString('weeklyDataUsage') ?? '{}',
-        "hourlyDataUsage": prefs.getString('hourlyDataUsage') ?? '{}',
-        "lastSavedTotals": prefs.getString('lastSavedTotals') ?? '{}',
-      };
-
-      // Prepare file to save debug output
-      final directory = Directory.current; // Use app-specific directory in production
-      final filePath = '${directory.path}/debug_output.txt';
-
-      // Format data to save
-      final timestamp = DateTime.now().toIso8601String();
-      final debugData = {
-        "timestamp": timestamp,
-        "preferences": allPreferences,
-        "currentTotals": currentTotals
-      };
-
-      // Append data to the file
-      final file = File(filePath);
-      await file.writeAsString('${jsonEncode(debugData)}\n', mode: FileMode.append);
-
-      print('Debug output saved to $filePath');
-    } catch (e) {
-      print('Error saving debug output: $e');
-    }
-  }
+  // Future<void> saveDebugOutput(Map<String, int> currentTotals) async {
+  //   try {
+  //     // Retrieve SharedPreferences instance
+  //     final prefs = await SharedPreferences.getInstance();
+  //
+  //     // Gather all preference keys and values
+  //     final Map<String, dynamic> allPreferences = {
+  //       "weeklyDataUsage": prefs.getString('weeklyDataUsage') ?? '{}',
+  //       "hourlyDataUsage": prefs.getString('hourlyDataUsage') ?? '{}',
+  //       "lastSavedTotals": prefs.getString('lastSavedTotals') ?? '{}',
+  //     };
+  //
+  //     // Prepare file to save debug output
+  //     final directory = Directory.current; // Use app-specific directory in production
+  //     final filePath = '${directory.path}/debug_output.txt';
+  //
+  //     // Format data to save
+  //     final timestamp = DateTime.now().toIso8601String();
+  //     final debugData = {
+  //       "timestamp": timestamp,
+  //       "preferences": allPreferences,
+  //       "currentTotals": currentTotals
+  //     };
+  //
+  //     // Append data to the file
+  //     final file = File(filePath);
+  //     await file.writeAsString('${jsonEncode(debugData)}\n', mode: FileMode.append);
+  //
+  //     print('Debug output saved to $filePath');
+  //   } catch (e) {
+  //     print('Error saving debug output: $e');
+  //   }
+  // }
 
   Future<void> updateDailyUsage() async {
     final prefs = await SharedPreferences.getInstance();
@@ -240,12 +229,12 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:00 /f
 
     final today = DateTime.now().toIso8601String().split('T')[0];
     final currentTotals = await fetchCurrentUsage();
-    await saveDebugOutput(currentTotals);
+    // await saveDebugOutput(currentTotals);
 
     // Case 1: First launch or no saved totals
     if (lastSavedData.isEmpty) {
       prefs.setString('lastSavedTotals', json.encode({'date': today, 'totals': currentTotals}));
-      await saveDailyUsage(today, {'inOctets': 0, 'outOctets': 0});
+      await saveDailyUsage(today, {'ethernet': 0, 'wifi': 0});
       return;
     }
 
@@ -262,16 +251,16 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:00 /f
         if (missedDate == lastSavedDate) {
           // Calculate usage for the last active day
           final dailyUsage = {
-            'inOctets': calculateDailyDelta(
+            'ethernet': calculateDailyDelta(
               currentValue: currentTotals['ethernetInOctets'] ?? 0,
               previousValue: lastTotals['ethernetInOctets'] ?? 0,
             ) + calculateDailyDelta(
-              currentValue: currentTotals['wifiInOctets'] ?? 0,
-              previousValue: lastTotals['wifiInOctets'] ?? 0,
-            ),
-            'outOctets': calculateDailyDelta(
               currentValue: currentTotals['ethernetOutOctets'] ?? 0,
               previousValue: lastTotals['ethernetOutOctets'] ?? 0,
+            ),
+            'wifi': calculateDailyDelta(
+              currentValue: currentTotals['wifiInOctets'] ?? 0,
+              previousValue: lastTotals['wifiInOctets'] ?? 0,
             ) + calculateDailyDelta(
               currentValue: currentTotals['wifiOutOctets'] ?? 0,
               previousValue: lastTotals['wifiOutOctets'] ?? 0,
@@ -281,7 +270,7 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:00 /f
           weeklyData[missedDate] = dailyUsage;
         } else {
           // Fill missing days with 0 usage
-          weeklyData[missedDate] = {'inOctets': 0, 'outOctets': 0};
+          weeklyData[missedDate] = {'ethernet': 0, 'wifi': 0};
         }
 
         lastDate = lastDate.add(const Duration(days: 1));
@@ -298,16 +287,16 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:00 /f
 
     // Case 3: Calculate real-time usage for today
     final realTimeUsage = {
-      'inOctets': calculateDailyDelta(
+      'ethernet': calculateDailyDelta(
         currentValue: currentTotals['ethernetInOctets'] ?? 0,
         previousValue: lastTotals['ethernetInOctets'] ?? 0,
       ) + calculateDailyDelta(
-        currentValue: currentTotals['wifiInOctets'] ?? 0,
-        previousValue: lastTotals['wifiInOctets'] ?? 0,
-      ),
-      'outOctets': calculateDailyDelta(
         currentValue: currentTotals['ethernetOutOctets'] ?? 0,
         previousValue: lastTotals['ethernetOutOctets'] ?? 0,
+      ),
+      'wifi': calculateDailyDelta(
+        currentValue: currentTotals['wifiInOctets'] ?? 0,
+        previousValue: lastTotals['wifiInOctets'] ?? 0,
       ) + calculateDailyDelta(
         currentValue: currentTotals['wifiOutOctets'] ?? 0,
         previousValue: lastTotals['wifiOutOctets'] ?? 0,
@@ -352,7 +341,7 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:00 /f
     final hourKey = '$currentDate-${currentHour.toString().padLeft(2, '0')}';
 
     // Fetch current totals from weekly data
-    final currentTotals = weeklyData[currentDate] ?? {'inOctets': 0, 'outOctets': 0};
+    final currentTotals = weeklyData[currentDate] ?? {'ethernet': 0, 'wifi': 0};
 
     hourlyData.removeWhere((key, _) {
       final keyDate = key.split('-').sublist(0, 3).join('-'); // Extract YYYY-MM-DD
@@ -361,8 +350,8 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:00 /f
 
     // Update hourly data for the current hour
     hourlyData[hourKey] = {
-      'inOctets': currentTotals['inOctets'] ?? 0,
-      'outOctets': currentTotals['outOctets'] ?? 0,
+      'ethernet': currentTotals['ethernet'] ?? 0,
+      'wifi': currentTotals['wifi'] ?? 0,
     };
 
     // Save the updated hourly data
@@ -402,8 +391,8 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:00 /f
 
       return {
         'hourKey': entry.key, // Keep hourKey as a String
-        'inOctets': (hourData['inOctets'] as num?)?.toDouble() ?? 0.0, // Safely convert to double
-        'outOctets': (hourData['outOctets'] as num?)?.toDouble() ?? 0.0, // Safely convert to double
+        'ethernet': (hourData['ethernet'] as num?)?.toDouble() ?? 0.0, // Safely convert to double
+        'wifi': (hourData['wifi'] as num?)?.toDouble() ?? 0.0, // Safely convert to double
       };
     }).toList();
   }
@@ -489,20 +478,6 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:00 /f
       'wifiInOctets': 0,
       'wifiOutOctets': 0,
     };
-  }
-
-
-  void scheduleMidnightUpdate() {
-    final now = DateTime.now();
-    final midnight = DateTime(now.year, now.month, now.day + 1);
-    final durationUntilMidnight = midnight.difference(now);
-
-    Timer(durationUntilMidnight, () async {
-      print("success Midnight");
-      await updateDailyUsage(); // Ensure daily usage is updated
-      await updateHourlyUsage(); // Ensure hourly usage is updated
-      scheduleMidnightUpdate(); // Reschedule for the next midnight
-    });
   }
 
   void scheduleHourlyUpdate() {
@@ -605,12 +580,13 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:00 /f
         .where((entry) => entry.key != today) // Exclude today's data
         .map((entry) {
       final date = entry.key;
-      final dataUsed = (entry.value['inOctets'] ?? 0) + (entry.value['outOctets'] ?? 0);
+      final ethernet = (entry.value['ethernet'] ?? 0);
+      final wifi = (entry.value['wifi'] ?? 0);
 
       return {
         "usageTime": "${date}T00:00:00", // ISO format for daily data
-        "dataUsed": (dataUsed / (1024 * 1024)).toInt(),
-        "wifiUsed": 0.0, // Always 0 as specified
+        "dataUsed": (ethernet / (1024 * 1024)).toInt(),
+        "wifiUsed": (wifi / (1024 * 1024)).toInt(), // Always 0 as specified
       };
     }).toList();
 
@@ -627,13 +603,13 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:00 /f
       final hour = splitKey[3]; // HH
       final usageTime = "${date}T$hour:00:00";
 
-      final dataUsed = ((entry['inOctets'] as num?)?.toDouble() ?? 0.0) +
-          ((entry['outOctets'] as num?)?.toDouble() ?? 0.0);
+      final ethernet = ((entry['ethernet'] as num?)?.toDouble() ?? 0.0);
+      final wifi = ((entry['wifi'] as num?)?.toDouble() ?? 0.0);
 
       return {
         "usageTime": usageTime, // Corrected format
-        "dataUsed": (dataUsed / (1024 * 1024)).toInt(),
-        "wifiUsed": 0.0, // Always 0 as specified
+        "dataUsed": (ethernet / (1024 * 1024)).toInt(),
+        "wifiUsed": (wifi / (1024 * 1024)).toInt(), // Always 0 as specified
       };
     }).toList();
 

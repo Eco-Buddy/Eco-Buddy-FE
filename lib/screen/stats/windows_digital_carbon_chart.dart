@@ -15,26 +15,26 @@ class WindowsDigitalCarbonChart extends StatelessWidget {
     List<FlSpot> sendSpots = [];
     List<FlSpot> receiveSpots = [];
 
-    double cumulativeSend = 0.0;
-    double cumulativeReceive = 0.0;
+    double cumulativeWifi = 0.0;
+    double cumulativeEthernet = 0.0;
 
     // Populate chart spots using hourly data
     for (final data in hourlyUsageData) {
       final hour = data['hour']!;
-      final sendData = data['SentMB']!;
-      final receiveData = data['ReceivedMB']!;
+      final wifiData = data['wifi']!;
+      final ethernetData = data['ethernet']!;
 
-      cumulativeSend = sendData;
-      cumulativeReceive = receiveData;
+      cumulativeWifi = wifiData * 8.6;
+      cumulativeEthernet = ethernetData * 11;
 
-      sendSpots.add(FlSpot(hour, cumulativeSend * animationValue));
-      receiveSpots.add(FlSpot(hour, cumulativeReceive * animationValue));
+      sendSpots.add(FlSpot(hour, cumulativeWifi * animationValue));
+      receiveSpots.add(FlSpot(hour, cumulativeEthernet * animationValue));
     }
 
     // Determine the max Y-axis value for scaling
-    double maxYValue = (cumulativeSend > cumulativeReceive
-        ? cumulativeSend
-        : cumulativeReceive) * 1.5;
+    double maxYValue = (cumulativeWifi > cumulativeEthernet
+        ? cumulativeWifi
+        : cumulativeEthernet) * 1.5;
 
     return LineChartData(
       gridData: const FlGridData(show: false),
@@ -81,15 +81,15 @@ class WindowsDigitalCarbonChart extends StatelessWidget {
           spots: sendSpots,
           isCurved: false,
           gradient: const LinearGradient(
-            colors: [Colors.orange, Colors.deepOrangeAccent],
+            colors: [Colors.cyan, Colors.lightBlueAccent],
             stops: [0.1, 0.9],
           ),
           belowBarData: BarAreaData(
             show: true,
             gradient: LinearGradient(
               colors: [
-                Colors.orange.withOpacity(0.2),
-                Colors.deepOrangeAccent.withOpacity(0.1),
+                Colors.cyan.withOpacity(0.2),
+                Colors.lightBlueAccent.withOpacity(0.1),
               ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
@@ -102,15 +102,15 @@ class WindowsDigitalCarbonChart extends StatelessWidget {
           spots: receiveSpots,
           isCurved: false,
           gradient: const LinearGradient(
-            colors: [Colors.cyan, Colors.lightBlueAccent],
+            colors: [Colors.green, Colors.lightGreen],
             stops: [0.1, 0.9],
           ),
           belowBarData: BarAreaData(
             show: true,
             gradient: LinearGradient(
               colors: [
-                Colors.cyan.withOpacity(0.2),
-                Colors.lightBlueAccent.withOpacity(0.1),
+                Colors.green.withOpacity(0.2),
+                Colors.lightGreen.withOpacity(0.1),
               ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
@@ -134,17 +134,17 @@ class WindowsDigitalCarbonChart extends StatelessWidget {
           fitInsideVertically: true,
           getTooltipItems: (touchedSpots) {
             return touchedSpots.map((spot) {
-              final isSend = spot.bar.gradient?.colors.first == Colors.orange;
-              final label = isSend ? 'Sent Data' : 'Received Data';
+              final isSend = spot.bar.gradient?.colors.first == Colors.cyan;
+              final label = isSend ? 'WiFi' : 'EtherNet';
 
-              final formattedCarbonFootprint = formatCarbonFootprint(spot.y*11);
+              final formattedCarbonFootprint = formatCarbonFootprint(spot.y);
 
               return LineTooltipItem(
                 '$label\nTime: ${spot.x.toInt()}h\nUsage: $formattedCarbonFootprint',
                 TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 10,
-                  color: isSend ? Colors.deepOrangeAccent : Colors.lightBlueAccent,
+                  color: isSend ? Colors.lightBlueAccent : Colors.lightGreen,
                 ),
               );
             }).toList();

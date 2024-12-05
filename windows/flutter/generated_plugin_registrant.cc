@@ -11,6 +11,7 @@
 #include <tray_manager/tray_manager_plugin.h>
 #include <webview_windows/webview_windows_plugin.h>
 #include <window_manager/window_manager_plugin.h>
+#include <windows_notification/windows_notification_plugin_c_api.h>
 #include <windows_single_instance/windows_single_instance_plugin.h>
 
 void RegisterPlugins(flutter::PluginRegistry* registry) {
@@ -24,6 +25,8 @@ void RegisterPlugins(flutter::PluginRegistry* registry) {
       registry->GetRegistrarForPlugin("WebviewWindowsPlugin"));
   WindowManagerPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("WindowManagerPlugin"));
+  WindowsNotificationPluginCApiRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("WindowsNotificationPluginCApi"));
   WindowsSingleInstancePluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("WindowsSingleInstancePlugin"));
 }

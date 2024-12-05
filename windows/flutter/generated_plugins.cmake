@@ -8,6 +8,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   tray_manager
   webview_windows
   window_manager
+  windows_notification
   windows_single_instance
 )
 

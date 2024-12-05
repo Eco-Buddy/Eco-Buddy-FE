@@ -160,7 +160,7 @@ class OtherDevicesDigitalCarbonChart extends StatelessWidget {
   }
 }
 
-// Utility function to format carbon footprint values
+// 유틸리티
 String formatCarbonFootprint(double value) {
   if (value >= 1e6) {
     return '${(value / 1e6).toStringAsFixed(2)} t'; // Tons
