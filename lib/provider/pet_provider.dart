@@ -4,7 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 class Pet {
-  String petName;
+  final String petName;
   final int petLevel;
   final int experience;
   final int points;
@@ -89,59 +89,6 @@ class PetProvider with ChangeNotifier {
     }
   }
 
-  Future<void> updatePetName(String newPetName) async {
-    if (_pet == null) {
-      print('❌ PetProvider: 업데이트할 펫 데이터가 없습니다.');
-      return;
-    }
-
-    final accessToken = await secureStorage.read(key: 'accessToken');
-    final deviceId = await secureStorage.read(key: 'deviceId');
-    final userId = await secureStorage.read(key: 'userId');
-
-    if (accessToken == null || deviceId == null || userId == null) {
-      print('❌ 인증 정보가 부족합니다.');
-      return;
-    }
-
-    // 변경된 이름을 반영한 로컬 데이터 업데이트
-    _pet = Pet(
-      petName: newPetName,
-      petLevel: _pet!.petLevel,
-      experience: _pet!.experience,
-      points: _pet!.points,
-    );
-    notifyListeners();
-
-    try {
-      final response = await http.post(
-        Uri.parse('http://223.130.162.100:4525/pet/save'),
-        headers: {
-          'authorization': accessToken,
-          'deviceId': deviceId,
-          'userId': userId,
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(_pet!.toJson()),
-      );
-
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-
-        // 서버에서 최신 데이터 동기화
-        _pet = Pet.fromJson(responseData['pet']);
-        await updateLocalPetData(_pet!); // 로컬 스토리지 업데이트
-        notifyListeners(); // UI 업데이트
-        print('✅ 펫 이름 서버 동기화 및 업데이트 성공');
-      } else {
-        print('❌ 펫 이름 서버 업데이트 실패: ${response.statusCode}');
-        print('❌ 응답 내용: ${response.body}');
-      }
-    } catch (e) {
-      print('❌ 펫 이름 업데이트 중 오류 발생: $e');
-    }
-  }
-
   /// **Save Modified Pet Data to Server**
   Future<void> savePetDataToServer() async {
     if (_pet == null) {
@@ -159,47 +106,29 @@ class PetProvider with ChangeNotifier {
     }
 
     try {
-      // 헤더 생성
-      final headers = {
-        'authorization': accessToken,
-        'deviceId': deviceId,
-        'userId': userId,
-        'Content-Type': 'application/json', // Content-Type 추가
-      };
-
-      // 바디 생성
-      final body = jsonEncode({
-        'pet': _pet!.toJson(), // 서버가 기대하는 구조에 맞게 수정
-      });
-
-      // 중간 점검: 헤더와 바디 출력
-      print('📝 HTTP 요청 헤더: $headers');
-      print('📝 HTTP 요청 바디: $body');
-
-      // HTTP 요청 보내기
       final response = await http.post(
-        Uri.parse('http://223.130.162.100:4525/pet/save'),
-        headers: headers,
-        body: body,
+        Uri.parse('http://ecobuddy.kro.kr:4525/pet/save'),
+        headers: {
+          'authorization': accessToken,
+          'deviceId': deviceId,
+          'userId': userId,
+          'Content-Type': 'application/json', // Content-Type 추가
+        },
+        body: jsonEncode({
+          'pet': _pet!.toJson(), // 서버가 기대하는 구조에 맞게 수정
+        }),
       );
 
-      // 응답 데이터 처리
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        if (responseData is Map<String, dynamic>) {
-          // 새로운 AccessToken 저장
-          if (responseData.containsKey('new_accessToken')) {
-            await secureStorage.write(
-              key: 'accessToken',
-              value: responseData['new_accessToken'],
-            );
-          }
 
-          await updateLocalPetData(_pet!);
-          print('✅ 펫 데이터 서버 저장 성공: 새로운 AccessToken 저장 완료');
-        } else {
-          print('⚠️ 서버 응답 데이터가 예상된 형식이 아닙니다.');
-        }
+        // 새로운 AccessToken 저장
+        await secureStorage.write(
+          key: 'accessToken',
+          value: responseData['new_accessToken'],
+        );
+        await updateLocalPetData(_pet!);
+        print('✅ 펫 데이터 서버 저장 성공: 새로운 AccessToken 저장 완료');
       } else {
         print('❌ 펫 데이터 서버 저장 실패: ${response.statusCode}');
         print('❌ 서버 응답 메시지: ${response.body}');
@@ -208,8 +137,6 @@ class PetProvider with ChangeNotifier {
       print('❌ 펫 데이터 서버 저장 중 오류 발생: $e');
     }
   }
-
-
 
   /// **Update Local Pet Data**
   Future<void> updateLocalPetData(Pet updatedPet) async {

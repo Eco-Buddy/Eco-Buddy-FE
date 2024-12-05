@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart'; // For Android WebView
 import 'package:webview_windows/webview_windows.dart'; // For Windows WebView
 import 'dart:io'; // For platform check
-import '../../provider/pet_provider.dart'; // PetProvider import
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // Secure storage
 
 class MenuPage extends StatefulWidget {
   const MenuPage({Key? key}) : super(key: key);
@@ -13,13 +14,16 @@ class MenuPage extends StatefulWidget {
 }
 
 class _MenuPageState extends State<MenuPage> {
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+
   WebViewController? _androidWebViewController; // For Android WebView
   WebviewController? _windowsWebViewController; // For Windows WebView
   bool _isInitialized = false;
-
+  String? newPetName; // 클래스 상태 변수
   @override
   void initState() {
     super.initState();
+    //_initializeWebView();
   }
 
   Future<void> _initializeWebView() async {
@@ -40,15 +44,44 @@ class _MenuPageState extends State<MenuPage> {
   }
 
   Future<void> _logout() async {
-    // 로그아웃 로직 구현 (생략)
+    try {
+      final provider = await _secureStorage.read(key: 'provider');
+      final accessToken = await _secureStorage.read(key: 'accessToken');
+
+      if (provider != null && accessToken != null) {
+        final response = await http.post(
+          Uri.parse('http://223.130.162.100:4525/$provider/logout'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'access_token': accessToken}),
+        );
+
+        if (response.statusCode == 200) {
+          print('✅ 로그아웃 성공');
+        } else {
+          print('❌ 로그아웃 실패: ${response.statusCode}');
+        }
+      }
+
+      await _secureStorage.deleteAll();
+      print('🔑 Secure storage cleared.');
+
+      if (Platform.isAndroid && _androidWebViewController != null) {
+        await _androidWebViewController!.clearCache();
+        print('✅ Android WebView cache cleared.');
+      } else if (Platform.isWindows && _windowsWebViewController != null && _isInitialized) {
+        await _windowsWebViewController!.clearCache();
+        await _windowsWebViewController!.clearCookies();
+        print('✅ Windows WebView cookies and cache cleared.');
+      }
+
+      Navigator.pushReplacementNamed(context, '/start');
+    } catch (e) {
+      print('❌ 로그아웃 처리 중 오류 발생: $e');
+    }
   }
 
   Future<void> _editPetName(BuildContext context) async {
-    final petProvider = Provider.of<PetProvider>(context, listen: false);
-
-    String? tempPetName; // 선언 위치를 조정하여 `onChanged`에서 사용할 수 있도록 수정
-
-    tempPetName = await showDialog<String>(
+    newPetName = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('펫 이름 수정'),
@@ -57,12 +90,12 @@ class _MenuPageState extends State<MenuPage> {
             hintText: '새로운 펫 이름을 입력하세요',
           ),
           onChanged: (value) {
-            tempPetName = value; // 값 업데이트
+            newPetName = value;
           },
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, tempPetName),
+            onPressed: () => Navigator.pop(context, newPetName),
             child: const Text('확인'),
           ),
           TextButton(
@@ -73,26 +106,14 @@ class _MenuPageState extends State<MenuPage> {
       ),
     );
 
-    if (tempPetName?.isNotEmpty ?? false) {
-      print('새로운 펫 이름: $tempPetName');
-
-      try {
-        // 펫 이름 변경 후 서버와 동기화
-        petProvider.pet?.petName = tempPetName!;
-        await petProvider.savePetDataToServer();
-        print('✅ 펫 이름 업데이트 완료');
-      } catch (e) {
-        print('❌ 펫 이름 업데이트 중 오류 발생: $e');
-      }
+    if (newPetName?.isNotEmpty ?? false) {
+      print('새로운 펫 이름: $newPetName');
+      // 펫 이름 업데이트 API 호출 코드 추가
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
-    final petProvider = Provider.of<PetProvider>(context);
-    final pet = petProvider.pet;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('메뉴'),
@@ -101,7 +122,7 @@ class _MenuPageState extends State<MenuPage> {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
-          _buildUserProfile(pet),
+          _buildUserProfile(),
           const SizedBox(height: 16.0),
           _buildMenuSection(
             title: '펫 관리',
@@ -146,7 +167,7 @@ class _MenuPageState extends State<MenuPage> {
     );
   }
 
-  Widget _buildUserProfile(Pet? pet) {
+  Widget _buildUserProfile() {
     return Card(
       elevation: 4.0,
       child: Padding(
@@ -159,22 +180,19 @@ class _MenuPageState extends State<MenuPage> {
               child: const Icon(Icons.person, size: 40, color: Colors.white),
             ),
             const SizedBox(width: 16.0),
-            if (pet != null)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '펫 이름: ${pet.petName}',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    '레벨: ${pet.petLevel}',
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                ],
-              )
-            else
-              const Text('펫 정보가 없습니다.'),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  '사용자 이름',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  '레벨: 1',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ],
+            ),
           ],
         ),
       ),
