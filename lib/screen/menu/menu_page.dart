@@ -23,7 +23,7 @@ class _MenuPageState extends State<MenuPage> {
   @override
   void initState() {
     super.initState();
-    //_initializeWebView();
+    _initializeWebView();
   }
 
   Future<void> _initializeWebView() async {

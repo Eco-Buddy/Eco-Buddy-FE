@@ -2,82 +2,41 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
 import '../../provider/pet_provider.dart';
-import 'dart:convert'; // 추가: jsonDecode 함수 사용을 위한 패키지
 
 class HomePage extends StatelessWidget {
   const HomePage({Key? key}) : super(key: key);
 
   final secureStorage = const FlutterSecureStorage();
 
-  /// SecureStorage에서 펫 데이터를 가져오는 함수
-  Future<Map<String, dynamic>?> _loadPetData() async {
-    final petData = await secureStorage.read(key: 'petData');
-    if (petData != null) {
-      return jsonDecode(petData); // JSON 문자열을 Map<String, dynamic>으로 변환
-    }
-    return null; // 데이터가 없으면 null 반환
+  Future<String> _loadProfileImage() async {
+    final profileImage = await secureStorage.read(key: 'profileImage');
+    return profileImage ?? ''; // 기본값으로 빈 문자열 반환
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, dynamic>?>(
-      future: _loadPetData(),
+    final petProvider = Provider.of<PetProvider>(context);
+
+    if (!petProvider.isInitialized) {
+      // PetProvider 초기화 중 로딩 화면 표시
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final pet = petProvider.pet;
+
+    return FutureBuilder<String>(
+      future: _loadProfileImage(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          // 데이터 로딩 중 로딩 화면 표시
+          // 프로필 이미지 로딩 중 로딩 화면 표시
           return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
+            body: Center(child: CircularProgressIndicator()),
           );
         }
 
-        if (snapshot.hasError) {
-          // 에러가 발생한 경우
-          return Scaffold(
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    '펫 데이터를 불러오는 중 오류가 발생했습니다.',
-                    style: TextStyle(fontSize: 16, color: Colors.red),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => _loadPetData(), // 다시 시도
-                    child: const Text('다시 시도'),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-
-        final petData = snapshot.data;
-
-        if (petData == null) {
-          // 펫 데이터가 없는 경우
-          return Scaffold(
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    '저장된 펫 데이터가 없습니다.',
-                    style: TextStyle(fontSize: 16, color: Colors.red),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-              ),
-            ),
-          );
-        }
-
-        // 펫 데이터가 존재하는 경우
-        final petName = petData['petName'] ?? '알 수 없는 펫';
-        final petLevel = petData['petLevel'] ?? 0;
-        final points = petData['points'] ?? 0;
+        final profileImage = snapshot.data ?? '';
 
         return Scaffold(
           body: Stack(
@@ -91,8 +50,11 @@ class HomePage extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildUserProfile(petName, petLevel),
-                    _buildTokenInfo(points),
+                    _buildUserProfile(
+                      pet?.petName ?? '귀여운 펫', // Pet 닉네임 표시
+                      profileImage,
+                    ),
+                    _buildTokenInfo(pet?.points ?? 0), // Pet 포인트 표시
                   ],
                 ),
               ),
@@ -104,12 +66,6 @@ class HomePage extends StatelessWidget {
       },
     );
   }
-
-  Future<String> _loadProfileImage() async {
-    final profileImage = await secureStorage.read(key: 'profileImage');
-    return profileImage ?? ''; // 저장된 프로필 이미지가 없으면 빈 문자열 반환
-  }
-
 
   Widget _buildBackground() {
     return Positioned.fill(
@@ -143,6 +99,7 @@ class HomePage extends StatelessWidget {
           _buildIconButton(
             'assets/images/icon/shop_icon.png',
             onTap: () {
+              // 상점 버튼 클릭 처리
               print("Shop Icon Clicked");
             },
           ),
@@ -150,6 +107,7 @@ class HomePage extends StatelessWidget {
           _buildIconButton(
             'assets/images/icon/custom_icon.png',
             onTap: () {
+              // 커스텀 버튼 클릭 처리
               print("Custom Icon Clicked");
             },
           ),
@@ -170,49 +128,30 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildUserProfile(String petName, int petLevel) {
-    return FutureBuilder<String>(
-      future: _loadProfileImage(),
-      builder: (context, snapshot) {
-        final profileImage = snapshot.data ?? '';
-
-        return Container(
-          decoration: _buildInfoBoxDecoration(),
-          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: const Color(0xFFA57C50),
-                backgroundImage: profileImage.isNotEmpty
-                    ? NetworkImage(profileImage) as ImageProvider
-                    : const AssetImage('assets/images/profile/default.png'),
-              ),
-              const SizedBox(width: 8.0),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    petName,
-                    style: const TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  Text(
-                    '레벨: $petLevel',
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+  Widget _buildUserProfile(String petName, String profileImage) {
+    return Container(
+      decoration: _buildInfoBoxDecoration(),
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 24,
+            backgroundColor: const Color(0xFFA57C50),
+            backgroundImage: profileImage.isNotEmpty
+                ? NetworkImage(profileImage) as ImageProvider
+                : const AssetImage('assets/images/profile/default.png'),
           ),
-        );
-      },
+          const SizedBox(width: 8.0),
+          Text(
+            petName,
+            style: const TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
