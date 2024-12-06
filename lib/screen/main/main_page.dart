@@ -55,9 +55,6 @@ class _MainPageState extends State<MainPage> {
     try {
       // 서버에서 데이터 가져오기 (항상 실행)
       await petProvider.loadPetDataFromServer();
-
-      // 가져온 데이터를 로컬 저장소에 저장
-      await petProvider.savePetDataToServer();
     } catch (e) {
       print('❌ 펫 데이터 초기화 중 오류 발생: $e');
       setState(() {

@@ -22,6 +22,7 @@ class _MenuPageState extends State<MenuPage> {
   WebviewController? _windowsWebViewController; // For Windows WebView
   bool _isInitialized = false;
   String? newPetName; // 클래스 상태 변수
+
   @override
   void initState() {
     super.initState();
@@ -115,15 +116,29 @@ class _MenuPageState extends State<MenuPage> {
 
     if (newPetName?.isNotEmpty ?? false) {
       print('새로운 펫 이름: $newPetName');
-
       // 펫 이름을 업데이트하는 메서드 호출
       await Provider.of<PetProvider>(context, listen: false).updatePetName(newPetName!);
-
       // 성공적으로 업데이트 되었으면 UI도 갱신할 수 있습니다.
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('펫 이름이 업데이트되었습니다: $newPetName')),
       );
     }
+  }
+
+  Future<Map<String, dynamic>> _loadUserData() async {
+    final profileImage = await _secureStorage.read(key: 'profileImage') ?? '';
+    final userName = await _secureStorage.read(key: 'userName') ?? '사용자 이름';
+    final petDataString = await _secureStorage.read(key: 'petData');
+    Map<String, dynamic> petData = {};
+    if (petDataString != null) {
+      petData = jsonDecode(petDataString);
+    }
+    return {
+      'profileImage': profileImage,
+      'userName': userName,
+      'petName': petData['petName'] ?? '귀여운 펫',
+      'petLevel': petData['petLevel'] ?? 1,
+    };
   }
 
   @override
@@ -133,55 +148,67 @@ class _MenuPageState extends State<MenuPage> {
         title: const Text('메뉴'),
         backgroundColor: Colors.green,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16.0),
-        children: [
-          _buildUserProfile(),
-          const SizedBox(height: 16.0),
-          _buildMenuSection(
-            title: '펫 관리',
-            items: [
-              _buildMenuItem(
-                icon: Icons.pets,
-                title: '펫 이름 수정',
-                subtitle: '펫 이름을 변경합니다.',
-                onTap: () => _editPetName(context),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16.0),
-          _buildMenuSection(
-            title: '정보',
-            items: [
-              _buildMenuItem(
-                icon: Icons.tips_and_updates,
-                title: '환경 꿀팁',
-                subtitle: '환경을 지키는 유용한 팁들',
-                onTap: () {
-                  // 환경 꿀팁 페이지로 이동
-                  print('환경 꿀팁 클릭됨');
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 16.0),
-          _buildMenuSection(
-            title: '기타',
-            items: [
-              _buildMenuItem(
-                icon: Icons.exit_to_app,
-                title: '로그아웃',
-                subtitle: '계정에서 로그아웃',
-                onTap: _logout,
-              ),
-            ],
-          ),
-        ],
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: _loadUserData(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('오류가 발생했습니다.')); // 오류 처리
+          } else {
+            final data = snapshot.data!;
+            return ListView(
+              padding: const EdgeInsets.all(16.0),
+              children: [
+                _buildUserProfile(data['profileImage'], data['userName'], data['petName'], data['petLevel']),
+                const SizedBox(height: 16.0),
+                _buildMenuSection(
+                  title: '펫 관리',
+                  items: [
+                    _buildMenuItem(
+                      icon: Icons.pets,
+                      title: '펫 이름 수정',
+                      subtitle: '펫 이름을 변경합니다.',
+                      onTap: () => _editPetName(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16.0),
+                _buildMenuSection(
+                  title: '정보',
+                  items: [
+                    _buildMenuItem(
+                      icon: Icons.tips_and_updates,
+                      title: '환경 꿀팁',
+                      subtitle: '환경을 지키는 유용한 팁들',
+                      onTap: () {
+                        // 환경 꿀팁 페이지로 이동
+                        print('환경 꿀팁 클릭됨');
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16.0),
+                _buildMenuSection(
+                  title: '기타',
+                  items: [
+                    _buildMenuItem(
+                      icon: Icons.exit_to_app,
+                      title: '로그아웃',
+                      subtitle: '계정에서 로그아웃',
+                      onTap: _logout,
+                    ),
+                  ],
+                ),
+              ],
+            );
+          }
+        },
       ),
     );
   }
 
-  Widget _buildUserProfile() {
+  Widget _buildUserProfile(String profileImage, String userName, String petName, int petLevel) {
     return Card(
       elevation: 4.0,
       child: Padding(
@@ -191,19 +218,26 @@ class _MenuPageState extends State<MenuPage> {
             CircleAvatar(
               radius: 40,
               backgroundColor: Colors.grey[300],
-              child: const Icon(Icons.person, size: 40, color: Colors.white),
+              backgroundImage: profileImage.isNotEmpty
+                  ? NetworkImage(profileImage)
+                  : null,
+              child: profileImage.isEmpty ? const Icon(Icons.person, size: 40, color: Colors.white) : null,
             ),
             const SizedBox(width: 16.0),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Text(
-                  '사용자 이름',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  userName,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  '레벨: 1',
-                  style: TextStyle(fontSize: 16),
+                  '펫 이름: $petName',
+                  style: const TextStyle(fontSize: 16),
+                ),
+                Text(
+                  '레벨: $petLevel',
+                  style: const TextStyle(fontSize: 16),
                 ),
               ],
             ),
