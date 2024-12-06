@@ -64,18 +64,6 @@ class _NewbiePageState extends State<NewbiePage> {
     }
   }
 
-  Future<void> _savePetName() async {
-    final petName = _petNameController.text;
-    if (petName.isNotEmpty) {
-      await _secureStorage.write(key: 'petName', value: petName);
-
-      print('✅ 펫 이름 저장 완료: $petName');
-      Navigator.pushReplacementNamed(context, '/main');
-    } else {
-      print('❌ 펫 이름을 입력해주세요.');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -99,7 +87,7 @@ class _NewbiePageState extends State<NewbiePage> {
             ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: _savePetName,
+              onPressed: _createPet,
               child: const Text('저장하고 시작하기'),
             ),
           ],

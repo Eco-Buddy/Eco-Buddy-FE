@@ -80,6 +80,7 @@ class _StartPageState extends State<StartPage> {
       deviceId = id;
     });
     print('Device ID: $deviceId');
+    _sendDeviceId();
   }
 
   // 기존 로그인 정보 확인 후 이동 결정
@@ -87,6 +88,9 @@ class _StartPageState extends State<StartPage> {
     final accessToken = await _secureStorage.read(key: 'accessToken');
     final deviceId = await _secureStorage.read(key: 'deviceId');
     final userId = await _secureStorage.read(key: 'userId');
+    final sessionCookie = await _secureStorage.read(key: 'session_cookie');
+
+    print('세션 쿠키: $sessionCookie');
 
     if (accessToken != null && deviceId != null && userId != null) {
       print('🎉이전 로그인 기록 확인, 메인 페이지로 이동합니다.');
@@ -113,7 +117,6 @@ class _StartPageState extends State<StartPage> {
         body: jsonEncode({'id': deviceId}),
         headers: {'Content-Type': 'application/json'},
       );
-
       if (response.statusCode == 200) {
         final cookies = response.headers['set-cookie'];
         if (cookies != null) {
@@ -121,14 +124,8 @@ class _StartPageState extends State<StartPage> {
           RegExp(r'JSESSIONID=([^;]+)').firstMatch(cookies)?.group(1);
           if (sessionId != null) {
             await _secureStorage.write(key: 'session_cookie', value: sessionId);
+            print('세션 쿠키 저장 완료: $sessionId');
           }
-        }
-
-        final isNew = response.headers['isNew'];
-        if (isNew == '1') {
-          Navigator.pushReplacementNamed(context, '/main');
-        } else {
-          Navigator.pushReplacementNamed(context, '/login');
         }
       } else {
         setState(() {
