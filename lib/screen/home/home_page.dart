@@ -1,6 +1,9 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
 import '../../provider/pet_provider.dart';
 
 class HomePage extends StatelessWidget {
@@ -11,6 +14,14 @@ class HomePage extends StatelessWidget {
   Future<String> _loadProfileImage() async {
     final profileImage = await secureStorage.read(key: 'profileImage');
     return profileImage ?? ''; // 기본값으로 빈 문자열 반환
+  }
+
+  Future<Map<String, dynamic>?> _loadPetData() async {
+    final petData = await secureStorage.read(key: 'petData');
+    if (petData != null) {
+      return jsonDecode(petData);
+    }
+    return null;
   }
 
   @override
@@ -24,44 +35,57 @@ class HomePage extends StatelessWidget {
       );
     }
 
-    final pet = petProvider.pet;
-
-    return FutureBuilder<String>(
-      future: _loadProfileImage(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          // 프로필 이미지 로딩 중 로딩 화면 표시
+    return FutureBuilder<Map<String, dynamic>?> (
+      future: _loadPetData(),
+      builder: (context, petSnapshot) {
+        if (petSnapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
-        final profileImage = snapshot.data ?? '';
+        final petData = petSnapshot.data;
+        final petName = petData != null ? petData['petName'] ?? '귀여운 펫' : '귀여운 펫';
+        final petPoints = petData != null ? petData['points'] ?? 0 : 0;
 
-        return Scaffold(
-          body: Stack(
-            children: [
-              _buildBackground(),
-              _buildFloor(),
-              Positioned(
-                top: 20,
-                left: 16,
-                right: 16,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildUserProfile(
-                      pet?.petName ?? '귀여운 펫', // Pet 닉네임 표시
-                      profileImage,
+        return FutureBuilder<String>(
+          future: _loadProfileImage(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              // 프로필 이미지 로딩 중 로딩 화면 표시
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            }
+
+            final profileImage = snapshot.data ?? '';
+
+            return Scaffold(
+              body: Stack(
+                children: [
+                  _buildBackground(),
+                  _buildFloor(),
+                  Positioned(
+                    top: 20,
+                    left: 16,
+                    right: 16,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildUserProfile(
+                          petName, // Pet 닉네임 표시
+                          profileImage,
+                        ),
+                        _buildTokenInfo(petPoints), // Pet 포인트 표시
+                      ],
                     ),
-                    _buildTokenInfo(pet?.points ?? 0), // Pet 포인트 표시
-                  ],
-                ),
+                  ),
+                  _buildIcons(context),
+                  _buildCharacter(),
+                ],
               ),
-              _buildIcons(context),
-              _buildCharacter(),
-            ],
-          ),
+            );
+          },
         );
       },
     );

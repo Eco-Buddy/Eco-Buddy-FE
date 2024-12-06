@@ -60,11 +60,6 @@ class PetProvider with ChangeNotifier {
     }
 
     try {
-      print('load test 입니다');
-      print(accessToken);
-      print(deviceId);
-      print(userId);
-
       final response = await http.post(
         Uri.parse('http://ecobuddy.kro.kr:4525/pet/load'),
         headers: {
@@ -75,17 +70,20 @@ class PetProvider with ChangeNotifier {
       );
 
       if (response.statusCode == 200) {
+        print(response.statusCode);
         final responseData = jsonDecode(response.body);
-
-        _pet = Pet.fromJson(responseData);
-
+        print('📄 응답 데이터: $responseData');
         // SecureStorage에 저장
         await secureStorage.write(
+          key: 'newAccessToken',
+          value: responseData['new_accessToken'],
+        );
+        await secureStorage.write(
           key: 'petData',
-          value: jsonEncode(_pet!.toJson()),
+          value: jsonEncode(responseData['pet']),
         );
 
-        print('✅ 펫 데이터 로드 성공 및 저장 완료: $_pet');
+        print("✅ 펫 데이터 로드 성공 및 저장 완료");
       } else {
         print('❌ 펫 데이터 로드 실패: ${response.statusCode}');
       }
@@ -156,11 +154,6 @@ class PetProvider with ChangeNotifier {
 
   /// **Save Modified Pet Data to Server**
   Future<void> savePetDataToServer() async {
-    if (_pet == null) {
-      print('❌ PetProvider: 저장할 펫 데이터가 없습니다.');
-      return;
-    }
-
     final accessToken = await secureStorage.read(key: 'accessToken');
     final deviceId = await secureStorage.read(key: 'deviceId');
     final userId = await secureStorage.read(key: 'userId');
