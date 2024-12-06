@@ -22,6 +22,9 @@ class _BackendDataDisplayState extends State<BackendDataDisplay>
   bool isLoading = false;
   String? errorMessage;
 
+  // 기기 ID와 이름 매핑
+  Map<String, String> deviceIdToName = {};
+
   final _secureStorage = const FlutterSecureStorage();
 
   late AnimationController _animationController;
@@ -59,6 +62,7 @@ class _BackendDataDisplayState extends State<BackendDataDisplay>
       isLoading = true;
       errorMessage = null;
       availableDeviceIds.clear();
+      deviceIdToName.clear();
     });
 
     String userId = (await _secureStorage.read(key: 'userId')) ?? '';
@@ -82,6 +86,11 @@ class _BackendDataDisplayState extends State<BackendDataDisplay>
 
         setState(() {
           availableDeviceIds = filteredDeviceIds;
+
+          for (int i = 0; i < availableDeviceIds.length; i++) {
+            deviceIdToName[availableDeviceIds[i]] = "기기 ${i + 1}";
+          }
+
           if (availableDeviceIds.isNotEmpty) {
             selectedDeviceId = availableDeviceIds.first;
             fetchDeviceData(); // Automatically load data for the first device
@@ -537,7 +546,7 @@ class _BackendDataDisplayState extends State<BackendDataDisplay>
                                     return DropdownMenuItem<String>(
                                       value: deviceId,
                                       child: Text(
-                                        deviceId,
+                                        deviceIdToName[deviceId] ?? deviceId,
                                         overflow: TextOverflow.ellipsis,
                                         // Truncate long device names
                                         style: const TextStyle(fontSize: 14),

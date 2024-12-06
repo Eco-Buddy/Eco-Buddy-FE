@@ -356,8 +356,6 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:00 /f
 
     // Save the updated hourly data
     prefs.setString('hourlyDataUsage', json.encode(hourlyData));
-
-    print("Updated hourly usage for $hourKey: ${hourlyData[hourKey]}");
   }
 
 
@@ -399,6 +397,8 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:00 /f
 
 
   Future<Map<String, int>> fetchCurrentUsage() async {
+    const max32BitValue = 4294967295;
+
     final dwSize = calloc<Uint32>();
     final GetIfTable = DynamicLibrary.open('iphlpapi.dll').lookupFunction<
         Int32 Function(Pointer<MIB_IFTABLE>, Pointer<Uint32>, Int32),
@@ -433,13 +433,13 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:00 /f
             // Filter and aggregate data by type
             if (iface.dwType == 6) { // Ethernet
               ethernetUsage[macAddress] = {
-                'inOctets': iface.dwInOctets,
-                'outOctets': iface.dwOutOctets,
+                'inOctets': ensurePositive(iface.dwInOctets, max32BitValue),
+                'outOctets': ensurePositive(iface.dwOutOctets, max32BitValue),
               };
             } else if (iface.dwType == 71) { // Wi-Fi
               wifiUsage[macAddress] = {
-                'inOctets': iface.dwInOctets,
-                'outOctets': iface.dwOutOctets,
+                'inOctets': ensurePositive(iface.dwInOctets, max32BitValue),
+                'outOctets': ensurePositive(iface.dwOutOctets, max32BitValue),
               };
             }
           }
@@ -478,6 +478,11 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:00 /f
       'wifiInOctets': 0,
       'wifiOutOctets': 0,
     };
+  }
+
+  // 음수 값을 맥스 값으로 대체하는 함수
+  int ensurePositive(int value, int maxValue) {
+    return value >= 0 ? value : maxValue;
   }
 
   void scheduleHourlyUpdate() {

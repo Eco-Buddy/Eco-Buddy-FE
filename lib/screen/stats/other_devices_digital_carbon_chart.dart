@@ -78,7 +78,7 @@ class OtherDevicesDigitalCarbonChart extends StatelessWidget {
       lineBarsData: [
         LineChartBarData(
           spots: mobileSpots,
-          isCurved: true,
+          isCurved: false,
           gradient: const LinearGradient(
             colors: [Colors.green, Colors.lightGreenAccent],
               stops: [0.1, 0.9],
@@ -99,7 +99,7 @@ class OtherDevicesDigitalCarbonChart extends StatelessWidget {
         ),
         LineChartBarData(
           spots: wifiSpots,
-          isCurved: true,
+          isCurved: false,
           gradient: const LinearGradient(
             colors: [Colors.blue, Colors.lightBlueAccent],
             stops: [0.1, 0.9],
