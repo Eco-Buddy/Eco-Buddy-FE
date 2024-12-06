@@ -93,13 +93,6 @@ class MyApp extends StatelessWidget {
 
   // PetProvider 초기화 로직
   Future<void> _initializePetProvider(PetProvider petProvider) async {
-    // 1. 로컬 데이터 로드
-    await petProvider.loadLocalPetData();
-
-    // 2. 서버 동기화 작업 (유저 인증 정보가 있을 경우)
-    final userId = await secureStorage.read(key: 'userId');
-    if (userId != null) {
-      await petProvider.loadPetDataFromServer();
-    }
+    await petProvider.loadPetDataFromServer();
   }
 }

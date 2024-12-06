@@ -67,6 +67,7 @@ class _MainPageState extends State<MainPage> {
       setState(() {
         isLoading = false; // 로딩 상태 종료
       });
+
     }
   }
 

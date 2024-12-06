@@ -42,6 +42,7 @@ class _LoginPageState extends State<LoginPage> {
               _handleRedirectUri(request.url, isNaver: true);
               return NavigationDecision.prevent;
             } else if (request.url.startsWith("http://223.130.162.100:4525/login/oauth2/code/kakao")) {
+              print("카카오 이동");
               _handleRedirectUri(request.url, isNaver: false);
               return NavigationDecision.prevent;
             }
@@ -123,7 +124,7 @@ class _LoginPageState extends State<LoginPage> {
         final data = jsonDecode(response.body);
         if (data['id'] != null && data['access_token'] != null) {
           final isNew = response.headers['isNew'] == "1"; // isNew 값을 가져옴
-
+          print(isNew);
           await _saveUserData(
             id: data['id'],
             name: data['name'] ?? '',

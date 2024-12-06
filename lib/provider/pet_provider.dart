@@ -60,6 +60,11 @@ class PetProvider with ChangeNotifier {
     }
 
     try {
+      print('load test 입니다');
+      print(accessToken);
+      print(deviceId);
+      print(userId);
+
       final response = await http.post(
         Uri.parse('http://ecobuddy.kro.kr:4525/pet/load'),
         headers: {
@@ -91,11 +96,13 @@ class PetProvider with ChangeNotifier {
     isInitialized = true;
     notifyListeners();
   }
+
   Future<void> updatePetName(String newPetName) async {
     if (_pet == null) {
       print('❌ PetProvider: 업데이트할 펫 데이터가 없습니다.');
       return;
     }
+
     final accessToken = await secureStorage.read(key: 'accessToken');
     final deviceId = await secureStorage.read(key: 'deviceId');
     final userId = await secureStorage.read(key: 'userId');
@@ -104,6 +111,7 @@ class PetProvider with ChangeNotifier {
       print('❌ 인증 정보가 부족합니다.');
       return;
     }
+
     // 변경된 이름을 반영한 로컬 데이터 업데이트
     _pet = Pet(
       petName: newPetName,
@@ -122,7 +130,12 @@ class PetProvider with ChangeNotifier {
           'userId': userId,
           'Content-Type': 'application/json',
         },
-        body: jsonEncode(_pet!.toJson()),
+        body: jsonEncode({
+          'petName': newPetName,
+          'petLevel': _pet!.petLevel,
+          'experience': _pet!.experience,
+          'points': _pet!.points,
+        }),
       );
 
       if (response.statusCode == 200) {
@@ -235,5 +248,18 @@ class PetProvider with ChangeNotifier {
 
     isInitialized = true;
     notifyListeners();
+  }
+
+  /// **Print All Secure Storage Data**
+  Future<void> printAllSecureStorage() async {
+    try {
+      Map<String, String> allData = await secureStorage.readAll();
+      print('🔍 Secure Storage 내용 출력:');
+      allData.forEach((key, value) {
+        print('Key: $key, Value: $value');
+      });
+    } catch (e) {
+      print('❌ Secure Storage 데이터를 출력하는 중 오류 발생: $e');
+    }
   }
 }

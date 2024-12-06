@@ -5,6 +5,8 @@ import 'dart:io'; // For platform check
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // Secure storage
+import '../../provider/pet_provider.dart';  // 예시
+import 'package:provider/provider.dart';
 
 class MenuPage extends StatefulWidget {
   const MenuPage({Key? key}) : super(key: key);
@@ -80,26 +82,31 @@ class _MenuPageState extends State<MenuPage> {
     }
   }
 
+  // MenuPage에서 펫 이름 수정하기
   Future<void> _editPetName(BuildContext context) async {
-    newPetName = await showDialog<String>(
+    // TextEditingController 사용
+    TextEditingController petNameController = TextEditingController();
+
+    String? newPetName = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('펫 이름 수정'),
         content: TextField(
+          controller: petNameController, // 컨트롤러로 값 관리
           decoration: const InputDecoration(
             hintText: '새로운 펫 이름을 입력하세요',
           ),
-          onChanged: (value) {
-            newPetName = value;
-          },
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, newPetName),
+            onPressed: () {
+              // 다이얼로그 닫을 때 입력된 값 반환
+              Navigator.pop(context, petNameController.text);
+            },
             child: const Text('확인'),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context), // 취소시 다이얼로그 닫기
             child: const Text('취소'),
           ),
         ],
@@ -108,7 +115,14 @@ class _MenuPageState extends State<MenuPage> {
 
     if (newPetName?.isNotEmpty ?? false) {
       print('새로운 펫 이름: $newPetName');
-      // 펫 이름 업데이트 API 호출 코드 추가
+
+      // 펫 이름을 업데이트하는 메서드 호출
+      await Provider.of<PetProvider>(context, listen: false).updatePetName(newPetName!);
+
+      // 성공적으로 업데이트 되었으면 UI도 갱신할 수 있습니다.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('펫 이름이 업데이트되었습니다: $newPetName')),
+      );
     }
   }
 
