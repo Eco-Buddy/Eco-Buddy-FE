@@ -118,7 +118,15 @@ class _MenuPageState extends State<MenuPage> {
       print('새로운 펫 이름: $newPetName');
       // 펫 이름을 업데이트하는 메서드 호출
       await Provider.of<PetProvider>(context, listen: false).updatePetName(newPetName!);
+      // 로컬 스토리지에 업데이트된 펫 이름 저장
+      final petDataString = await _secureStorage.read(key: 'petData');
+      if (petDataString != null) {
+        final petData = jsonDecode(petDataString);
+        petData['petName'] = newPetName;
+        await _secureStorage.write(key: 'petData', value: jsonEncode(petData));
+      }
       // 성공적으로 업데이트 되었으면 UI도 갱신할 수 있습니다.
+      setState(() {}); // UI 업데이트
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('펫 이름이 업데이트되었습니다: $newPetName')),
       );
