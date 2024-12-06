@@ -1,10 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:ui'; // BackdropFilter를 위해 필요
 
 class ShopModal extends StatefulWidget {
-  final int currentPoints; // 현재 포인트를 받아옴
-
-  const ShopModal({Key? key, required this.currentPoints}) : super(key: key);
+  const ShopModal({Key? key}) : super(key: key);
 
   @override
   _ShopModalState createState() => _ShopModalState();
@@ -12,6 +12,7 @@ class ShopModal extends StatefulWidget {
 
 class _ShopModalState extends State<ShopModal> {
   int userPoints = 0; // 사용자 포인트 상태 관리
+  final secureStorage = const FlutterSecureStorage();
   final List<String> categories = ['벽지', '바닥'];
   String selectedCategory = '벽지';
 
@@ -49,7 +50,17 @@ class _ShopModalState extends State<ShopModal> {
   @override
   void initState() {
     super.initState();
-    userPoints = widget.currentPoints; // 초기 포인트 설정
+    _loadUserPoints();
+  }
+
+  Future<void> _loadUserPoints() async {
+    final petData = await secureStorage.read(key: 'petData');
+    if (petData != null) {
+      final decodedData = jsonDecode(petData);
+      setState(() {
+        userPoints = decodedData['points'] ?? 0;
+      });
+    }
   }
 
   @override

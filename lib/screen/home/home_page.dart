@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import '../../provider/pet_provider.dart';
+import '../shop/shop_modal.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -123,8 +124,13 @@ class HomePage extends StatelessWidget {
           _buildIconButton(
             'assets/images/icon/shop_icon.png',
             onTap: () {
-              // 상점 버튼 클릭 처리
-              print("Shop Icon Clicked");
+              // 상점 버튼 클릭 시 Shop Modal 팝업
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return ShopModal();
+                },
+              );
             },
           ),
           const SizedBox(height: 8),
