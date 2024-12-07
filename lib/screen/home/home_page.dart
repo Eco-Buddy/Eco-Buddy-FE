@@ -27,7 +27,7 @@ class HomePage extends StatelessWidget {
   }
 
   Future<List<dynamic>> _loadMissionsJson() async {
-    final String response = await rootBundle.loadString('screen/home/missions.json');
+    final String response = await rootBundle.loadString('lib/screen/home/missions.json');
     return jsonDecode(response);
   }
 
