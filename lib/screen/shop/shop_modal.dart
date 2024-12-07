@@ -19,6 +19,7 @@ class _ShopModalState extends State<ShopModal> with TickerProviderStateMixin {
   final List<String> categories = ['벽지', '바닥'];
   String selectedCategory = '벽지';
   Map<String, List<Map<String, dynamic>>> items = {};
+  List<int> purchasedItemIds = []; // 구매한 아이템 ID 목록
   late AnimationController _animationController;
 
   @override
@@ -51,22 +52,37 @@ class _ShopModalState extends State<ShopModal> with TickerProviderStateMixin {
     final petProvider = Provider.of<PetProvider>(context, listen: false);
     try {
       final range = selectedCategory == '벽지' ? 1000 : 2000; // 카테고리에 따라 범위 선택
-      final itemData = await petProvider.fetchItemsByRange(range); // `await` 추가
-      if (itemData.containsKey('usage')) {
+      final itemData = await petProvider.fetchItemsByRange(range);
+
+      if (itemData.containsKey('items')) {
+        purchasedItemIds = (itemData['items'] as List)
+            .map<int>((item) => item['itemId'] as int)
+            .toList();
+
+        // items.json에서 아이템 데이터 로드
+        final String response = await rootBundle.loadString('assets/items/items.json');
+        final data = jsonDecode(response) as Map<String, dynamic>;
+
         setState(() {
-          items[selectedCategory] = (itemData['usage'] as List).map((item) {
-            return {
-              'id': item['id'],
-              'itemId': item['itemId'],
-              'name': '아이템 ${item['itemId']}', // 예시 이름 설정
-              'image': 'assets/images/items/item_${item['itemId']}.png', // 예시 이미지 경로
-              'price': 100, // 예시 가격 설정
-              'isPurchased': false, // 구매 여부 초기화
-            };
-          }).toList();
+          items = {
+            '벽지': (data['벽지'] as List).map<Map<String, dynamic>>((item) {
+              final isPurchased = purchasedItemIds.contains(item['itemId']);
+              return {
+                ...item,
+                'isPurchased': isPurchased,
+              };
+            }).toList(),
+            '바닥': (data['바닥'] as List).map<Map<String, dynamic>>((item) {
+              final isPurchased = purchasedItemIds.contains(item['itemId']);
+              return {
+                ...item,
+                'isPurchased': isPurchased,
+              };
+            }).toList(),
+          };
         });
       } else {
-        throw Exception('Invalid item data or missing "usage" key');
+        throw Exception('Invalid item data or missing "items" key');
       }
     } catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(
