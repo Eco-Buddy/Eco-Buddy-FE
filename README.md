@@ -22,7 +22,7 @@
   캐릭터 키우기를 통해서 사용자가 지속적으로 탄소 발자국을 줄일 수 있도록 합니다.
 <br>
 <br>  
-**통계화면**
+## 통계화면
 ![통계](https://github.com/user-attachments/assets/0bf6301c-7b32-4a22-9f26-0b2573d90db2)
 <br> 
 <br>  
