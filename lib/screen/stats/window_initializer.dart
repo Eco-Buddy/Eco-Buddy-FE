@@ -590,8 +590,8 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:00 /f
 
       return {
         "usageTime": "${date}T00:00:00", // ISO format for daily data
-        "dataUsed": (ethernet / (1024 * 1024)).toInt(),
-        "wifiUsed": (wifi / (1024 * 1024)).toInt(), // Always 0 as specified
+        "dataUsed": (ethernet / (1024 * 1024)).toDouble(),
+        "wifiUsed": (wifi / (1024 * 1024)).toDouble(), // Always 0 as specified
       };
     }).toList();
 
@@ -613,8 +613,8 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:00 /f
 
       return {
         "usageTime": usageTime, // Corrected format
-        "dataUsed": (ethernet / (1024 * 1024)).toInt(),
-        "wifiUsed": (wifi / (1024 * 1024)).toInt(), // Always 0 as specified
+        "dataUsed": (ethernet / (1024 * 1024)).toDouble(),
+        "wifiUsed": (wifi / (1024 * 1024)).toDouble(), // Always 0 as specified
       };
     }).toList();
 
