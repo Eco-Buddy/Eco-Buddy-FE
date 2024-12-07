@@ -90,6 +90,10 @@ class _StartPageState extends State<StartPage> {
     final userId = await _secureStorage.read(key: 'userId');
     final sessionCookie = await _secureStorage.read(key: 'session_cookie');
 
+
+    print('토큰: $accessToken');
+    print('기기: $deviceId');
+    print('유저: $userId');
     print('세션 쿠키: $sessionCookie');
 
     if (accessToken != null && deviceId != null && userId != null) {

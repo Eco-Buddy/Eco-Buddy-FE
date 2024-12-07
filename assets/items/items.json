@@ -1,0 +1,30 @@
+{
+  "벽지": [
+    {
+      "name": "기본 벽지",
+      "image": "assets/images/background/background_1.png",
+      "price": 500,
+      "isPurchased": false
+    },
+    {
+      "name": "벽지1",
+      "image": "assets/images/background/background_2.png",
+      "price": 700,
+      "isPurchased": false
+    }
+  ],
+  "바닥": [
+    {
+      "name": "기본 바닥",
+      "image": "assets/images/floor/floor_1.png",
+      "price": 400,
+      "isPurchased": false
+    },
+    {
+      "name": "바닥1",
+      "image": "assets/images/floor/floor_2.png",
+      "price": 600,
+      "isPurchased": false
+    }
+  ]
+}

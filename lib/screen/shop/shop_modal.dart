@@ -21,13 +21,13 @@ class _ShopModalState extends State<ShopModal> {
       {
         'name': '벽지 1',
         'image': 'assets/images/background/background_1.png',
-        'price': 500,
+        'price': 0,
         'isPurchased': false,
       },
       {
         'name': '벽지 2',
         'image': 'assets/images/background/background_2.png',
-        'price': 700,
+        'price': 0,
         'isPurchased': false,
       },
     ],
@@ -35,13 +35,13 @@ class _ShopModalState extends State<ShopModal> {
       {
         'name': '바닥 1',
         'image': 'assets/images/floor/floor_1.png',
-        'price': 400,
+        'price': 0,
         'isPurchased': false,
       },
       {
         'name': '바닥 2',
         'image': 'assets/images/floor/floor_2.png',
-        'price': 600,
+        'price': 0,
         'isPurchased': false,
       },
     ],
@@ -198,7 +198,7 @@ class _ShopModalState extends State<ShopModal> {
                         crossAxisCount: 2,
                         mainAxisSpacing: 16.0,
                         crossAxisSpacing: 16.0,
-                        childAspectRatio: 0.8,
+                        childAspectRatio: 0.75,
                       ),
                       itemCount: items[selectedCategory]?.length ?? 0,
                       itemBuilder: (BuildContext context, int index) {
@@ -248,46 +248,52 @@ class _ShopModalState extends State<ShopModal> {
     required bool isPurchased,
     required VoidCallback onPurchase,
   }) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12.0),
-      ),
-      elevation: 4.0,
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          children: [
-            Expanded(
-              child: Image.asset(
-                image,
-                fit: BoxFit.cover,
+    return Container(
+      width: 160,
+      child: Card(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12.0),
+        ),
+        elevation: 4.0,
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 120,
+                height: 120,
+                child: Image.asset(
+                  image,
+                  fit: BoxFit.cover,
+                ),
               ),
-            ),
-            const SizedBox(height: 8.0),
-            Text(
-              name,
-              style: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8.0),
-            Text(
-              '가격: $price',
-              style: const TextStyle(fontSize: 14.0, color: Colors.black54),
-            ),
-            const SizedBox(height: 12.0),
-            isPurchased
-                ? const Text(
-              '구매 완료',
-              style: TextStyle(
-                color: Colors.green,
-                fontWeight: FontWeight.bold,
+              const SizedBox(height: 8.0),
+              Text(
+                name,
+                style: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
               ),
-            )
-                : ElevatedButton(
-              onPressed: onPurchase,
-              child: const Text('구매하기'),
-            ),
-          ],
+              const SizedBox(height: 8.0),
+              Text(
+                '가격: $price',
+                style: const TextStyle(fontSize: 14.0, color: Colors.black54),
+              ),
+              const SizedBox(height: 12.0),
+              isPurchased
+                  ? const Text(
+                '구매 완료',
+                style: TextStyle(
+                  color: Colors.green,
+                  fontWeight: FontWeight.bold,
+                ),
+              )
+                  : ElevatedButton(
+                onPressed: onPurchase,
+                child: const Text('구매하기'),
+              ),
+            ],
+          ),
         ),
       ),
     );
