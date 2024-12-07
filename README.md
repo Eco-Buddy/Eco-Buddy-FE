@@ -31,7 +31,4 @@
 <br>
 <br>
 ## 4. 기술 스택
-![팀원 소개](https://github.com/user-attachments/assets/cb949465-0857-4ee5-ac0e-b00c04e07d86)
-
-
-
+![에코버디기술스택](https://github.com/user-attachments/assets/004d75ac-2ea4-4979-b29b-7c8b196661f6)
