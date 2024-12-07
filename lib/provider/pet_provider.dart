@@ -84,6 +84,7 @@ class PetProvider with ChangeNotifier {
         print("✅ 펫 데이터 로드 성공 및 저장 완료");
       } else {
         print('❌ 펫 데이터 로드 실패: ${response.statusCode}');
+        print('❌ 응답 내용: ${response.body}'); // 실패 원인 출력
       }
     } catch (e) {
       print('❌ 펫 데이터 로드 중 오류 발생: $e');
@@ -146,16 +147,13 @@ class PetProvider with ChangeNotifier {
     final deviceId = await secureStorage.read(key: 'deviceId') ?? '';
     final userId = await secureStorage.read(key: 'userId') ?? '';
 
-    print("test 시빨");
-    print(range);
-
     if (accessToken.isEmpty || deviceId.isEmpty || userId.isEmpty) {
       throw Exception('❌ 인증 정보가 부족합니다.');
     }
 
     try {
       final response = await http.post(
-        Uri.parse('http://ecobuddy.kro.kr:4525/item/load?range=$range'),
+        Uri.parse('http://ecobuddy.kro.kr:4525/item/load?range=1000'),
         headers: {
           'authorization': accessToken,
           'deviceId': deviceId,
@@ -163,7 +161,7 @@ class PetProvider with ChangeNotifier {
         },
       );
 
-      print(response.statusCode);
+      print('Status Code: ${response.statusCode}');
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
 
@@ -178,9 +176,11 @@ class PetProvider with ChangeNotifier {
         // 반환값 반환
         return responseData; // 아이템 데이터 반환
       } else {
+        print('Response Body: ${response.body}'); // 오류 발생 시 응답 내용 출력
         throw Exception('Failed to fetch items. Status code: ${response.statusCode}');
       }
     } catch (e) {
+      print('Error fetching items: $e');
       throw Exception('Error fetching items: $e');
     }
   }

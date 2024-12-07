@@ -251,11 +251,28 @@ class _LoginPageState extends State<LoginPage> {
                 ],
               ),
             ),
-            if (_isWebViewVisible && Platform.isAndroid)
-              WebViewWidget(controller: _androidWebViewController!),
-            if (_isWebViewVisible && Platform.isWindows)
+            if (_isWebViewVisible)
               Positioned.fill(
-                child: Webview(_windowsWebViewController!),
+                child: Stack(
+                  children: [
+                    if (Platform.isAndroid)
+                      WebViewWidget(controller: _androidWebViewController!),
+                    if (Platform.isWindows)
+                      Webview(_windowsWebViewController!),
+                    Positioned(
+                      top: 40,
+                      left: 16,
+                      child: IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.black),
+                        onPressed: () {
+                          setState(() {
+                            _isWebViewVisible = false;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ),
           ],
         ),
