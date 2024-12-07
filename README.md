@@ -20,15 +20,9 @@
   다른 플랫폼에서도 탄소를 얼마나 배출했는지 확인할 수 있습니다.
 - **캐릭터 육성 요소**
   캐릭터 키우기를 통해서 사용자가 지속적으로 탄소 발자국을 줄일 수 있도록 합니다.
-<br>
-<br>
 ## 통계화면
 ![통계](https://github.com/user-attachments/assets/0168c2d9-f2f7-417b-9204-c5dbccb703e8)
-<br>
-<br>
 ## 3. 팀원 소개
 ![팀원 소개](https://github.com/user-attachments/assets/958b08f9-c3ff-4a8b-838b-3fb0e73cbdbf)
-<br>
-<br>
 ## 4. 기술 스택
 ![에코버디기술스택](https://github.com/user-attachments/assets/004d75ac-2ea4-4979-b29b-7c8b196661f6)
