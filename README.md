@@ -23,13 +23,14 @@
 <br>
 <br>  
 **통계화면**
-![통계](https://github.com/user-attachments/assets/10f475b6-9b21-4376-a8b7-821a8e6ff9fb)
+![통계](https://github.com/user-attachments/assets/0bf6301c-7b32-4a22-9f26-0b2573d90db2)
 <br> 
 <br>  
 ## 3. 팀원 소개
-![팀원 소개](https://github.com/user-attachments/assets/7760420b-7d29-4b75-a313-e00ef3a3b02b)
+![팀원 소개](https://github.com/user-attachments/assets/68bdb549-78ea-4842-9fbb-ca089ef179da)
 <br> 
 <br> 
 ## 4. 기술 스택
-![에코버디기술스택](https://github.com/user-attachments/assets/b04c7afc-bca1-49b2-a46a-c30ddfeebd32)
+![에코버디기술스택](https://github.com/user-attachments/assets/7adb8236-7865-468f-aa80-753d492a90cb)
+
 
