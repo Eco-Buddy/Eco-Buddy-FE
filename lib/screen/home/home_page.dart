@@ -117,6 +117,7 @@ class HomePage extends StatelessWidget {
                       _buildIcons(context),
                       _buildCharacter(),
                       _buildTrash(context),
+                      _buildQuestButton(context),
                     ],
                   ),
                 );
@@ -180,6 +181,36 @@ class HomePage extends StatelessWidget {
           'assets/images/trash/trash_1.png', // 쓰레기 이미지 경로
           width: 50,
           height: 50,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuestButton(BuildContext context) {
+    return Positioned(
+      top: MediaQuery.of(context).size.height * 0.2,
+      right: 16,
+      child: GestureDetector(
+        onTap: () {
+          print("Quest Button Clicked");
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text("Quest"),
+              content: const Text("퀘스트 관련 내용을 여기에 표시합니다."),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("닫기"),
+                ),
+              ],
+            ),
+          );
+        },
+        child: Image.asset(
+          'assets/images/icon/quest_icon.png',
+          width: 70,
+          height: 80,
         ),
       ),
     );
