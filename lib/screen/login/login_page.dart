@@ -42,6 +42,7 @@ class _LoginPageState extends State<LoginPage> {
               _handleRedirectUri(request.url, isNaver: true);
               return NavigationDecision.prevent;
             } else if (request.url.startsWith("http://223.130.162.100:4525/login/oauth2/code/kakao")) {
+              print("카카오 이동");
               _handleRedirectUri(request.url, isNaver: false);
               return NavigationDecision.prevent;
             }
@@ -84,6 +85,7 @@ class _LoginPageState extends State<LoginPage> {
 
   void _loadLoginPage(String serverUrl) async {
     final sessionCookie = await _secureStorage.read(key: 'session_cookie');
+
     try {
       final response = await http.get(
         Uri.parse(serverUrl),
@@ -116,20 +118,36 @@ class _LoginPageState extends State<LoginPage> {
         Uri.parse(url),
         headers: {
           'Content-Type': 'application/json',
+
           if (sessionCookie != null) 'Cookie': 'JSESSIONID=$sessionCookie',
         },
       );
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        await _saveUserData(
-          id: data['id'],
-          name: data['name'],
-          profileImage: data['profile_image'],
-          accessToken: data['access_token'],
-          isNew: response.headers['isNew'] == "1",
-          isNaver: isNaver,
-        );
-        Navigator.pushReplacementNamed(context, '/main');
+        if (data['id'] != null && data['access_token'] != null) {
+          final isNew = response.headers['isnew'] == "1"; // isNew 값을 가져옴
+          print('isNew: $isNew');
+          await _saveUserData(
+            id: data['id'],
+            name: data['name'] ?? '',
+            profileImage: data['profile_image'] ?? '',
+            accessToken: data['access_token'],
+            isNew: isNew, // 추가된 부분
+            isNaver: isNaver,
+          );
+
+          // 페이지 이동 로직
+          if (isNew) {
+            print('🆕 신규 회원입니다. Newbie 페이지로 이동합니다.');
+            Navigator.pushReplacementNamed(context, '/newbie');
+          } else {
+            print('✅ 기존 회원입니다. Main 페이지로 이동합니다.');
+            Navigator.pushReplacementNamed(context, '/main');
+          }
+        } else {
+          print('❌ 데이터가 올바르지 않습니다: $data');
+        }
       } else {
         print('로그인 완료 후 토큰 데이터 요청 실패: ${response.statusCode}');
       }
@@ -233,11 +251,28 @@ class _LoginPageState extends State<LoginPage> {
                 ],
               ),
             ),
-            if (_isWebViewVisible && Platform.isAndroid)
-              WebViewWidget(controller: _androidWebViewController!),
-            if (_isWebViewVisible && Platform.isWindows)
+            if (_isWebViewVisible)
               Positioned.fill(
-                child: Webview(_windowsWebViewController!),
+                child: Stack(
+                  children: [
+                    if (Platform.isAndroid)
+                      WebViewWidget(controller: _androidWebViewController!),
+                    if (Platform.isWindows)
+                      Webview(_windowsWebViewController!),
+                    Positioned(
+                      top: 40,
+                      left: 16,
+                      child: IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.black),
+                        onPressed: () {
+                          setState(() {
+                            _isWebViewVisible = false;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ),
           ],
         ),

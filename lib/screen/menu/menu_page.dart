@@ -5,6 +5,8 @@ import 'dart:io'; // For platform check
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // Secure storage
+import '../../provider/pet_provider.dart';  // 예시
+import 'package:provider/provider.dart';
 
 class MenuPage extends StatefulWidget {
   const MenuPage({Key? key}) : super(key: key);
@@ -15,9 +17,11 @@ class MenuPage extends StatefulWidget {
 
 class _MenuPageState extends State<MenuPage> {
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+
   WebViewController? _androidWebViewController; // For Android WebView
   WebviewController? _windowsWebViewController; // For Windows WebView
   bool _isInitialized = false;
+  String? newPetName; // 클래스 상태 변수
 
   @override
   void initState() {
@@ -44,11 +48,9 @@ class _MenuPageState extends State<MenuPage> {
 
   Future<void> _logout() async {
     try {
-      // Retrieve stored data
       final provider = await _secureStorage.read(key: 'provider');
       final accessToken = await _secureStorage.read(key: 'accessToken');
 
-      // Call logout API
       if (provider != null && accessToken != null) {
         final response = await http.post(
           Uri.parse('http://223.130.162.100:4525/$provider/logout'),
@@ -63,11 +65,9 @@ class _MenuPageState extends State<MenuPage> {
         }
       }
 
-      // Clear secure storage
       await _secureStorage.deleteAll();
       print('🔑 Secure storage cleared.');
 
-      // Clear WebView cookies and cache
       if (Platform.isAndroid && _androidWebViewController != null) {
         await _androidWebViewController!.clearCache();
         print('✅ Android WebView cache cleared.');
@@ -77,11 +77,76 @@ class _MenuPageState extends State<MenuPage> {
         print('✅ Windows WebView cookies and cache cleared.');
       }
 
-      // Navigate to start page
       Navigator.pushReplacementNamed(context, '/start');
     } catch (e) {
       print('❌ 로그아웃 처리 중 오류 발생: $e');
     }
+  }
+
+  // MenuPage에서 펫 이름 수정하기
+  Future<void> _editPetName(BuildContext context) async {
+    // TextEditingController 사용
+    TextEditingController petNameController = TextEditingController();
+
+    String? newPetName = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('펫 이름 수정'),
+        content: TextField(
+          controller: petNameController, // 컨트롤러로 값 관리
+          decoration: const InputDecoration(
+            hintText: '새로운 펫 이름을 입력하세요',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              // 다이얼로그 닫을 때 입력된 값 반환
+              Navigator.pop(context, petNameController.text);
+            },
+            child: const Text('확인'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context), // 취소시 다이얼로그 닫기
+            child: const Text('취소'),
+          ),
+        ],
+      ),
+    );
+
+    if (newPetName?.isNotEmpty ?? false) {
+      print('새로운 펫 이름: $newPetName');
+      // 펫 이름을 업데이트하는 메서드 호출
+      await Provider.of<PetProvider>(context, listen: false).updatePetName(newPetName!);
+      // 로컬 스토리지에 업데이트된 펫 이름 저장
+      final petDataString = await _secureStorage.read(key: 'petData');
+      if (petDataString != null) {
+        final petData = jsonDecode(petDataString);
+        petData['petName'] = newPetName;
+        await _secureStorage.write(key: 'petData', value: jsonEncode(petData));
+      }
+      // 성공적으로 업데이트 되었으면 UI도 갱신할 수 있습니다.
+      setState(() {}); // UI 업데이트
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('펫 이름이 업데이트되었습니다: $newPetName')),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> _loadUserData() async {
+    final profileImage = await _secureStorage.read(key: 'profileImage') ?? '';
+    final userName = await _secureStorage.read(key: 'userName') ?? '사용자 이름';
+    final petDataString = await _secureStorage.read(key: 'petData');
+    Map<String, dynamic> petData = {};
+    if (petDataString != null) {
+      petData = jsonDecode(petDataString);
+    }
+    return {
+      'profileImage': profileImage,
+      'userName': userName,
+      'petName': petData['petName'] ?? '귀여운 펫',
+      'petLevel': petData['petLevel'] ?? 1,
+    };
   }
 
   @override
@@ -91,40 +156,67 @@ class _MenuPageState extends State<MenuPage> {
         title: const Text('메뉴'),
         backgroundColor: Colors.green,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16.0),
-        children: [
-          _buildUserProfile(),
-          const SizedBox(height: 16.0),
-          _buildMenuSection(
-            title: '일반 설정',
-            items: [
-              _buildMenuItem(
-                icon: Icons.settings,
-                title: '설정',
-                subtitle: '알림, 개인정보 등',
-                onTap: () => Navigator.pushNamed(context, '/settings'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16.0),
-          _buildMenuSection(
-            title: '기타',
-            items: [
-              _buildMenuItem(
-                icon: Icons.exit_to_app,
-                title: '로그아웃',
-                subtitle: '계정에서 로그아웃',
-                onTap: _logout,
-              ),
-            ],
-          ),
-        ],
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: _loadUserData(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('오류가 발생했습니다.')); // 오류 처리
+          } else {
+            final data = snapshot.data!;
+            return ListView(
+              padding: const EdgeInsets.all(16.0),
+              children: [
+                _buildUserProfile(data['profileImage'], data['userName'], data['petName'], data['petLevel']),
+                const SizedBox(height: 16.0),
+                _buildMenuSection(
+                  title: '펫 관리',
+                  items: [
+                    _buildMenuItem(
+                      icon: Icons.pets,
+                      title: '펫 이름 수정',
+                      subtitle: '펫 이름을 변경합니다.',
+                      onTap: () => _editPetName(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16.0),
+                _buildMenuSection(
+                  title: '정보',
+                  items: [
+                    _buildMenuItem(
+                      icon: Icons.tips_and_updates,
+                      title: '환경 꿀팁',
+                      subtitle: '환경을 지키는 유용한 팁들',
+                      onTap: () {
+                        // 환경 꿀팁 페이지로 이동
+                        print('환경 꿀팁 클릭됨');
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16.0),
+                _buildMenuSection(
+                  title: '기타',
+                  items: [
+                    _buildMenuItem(
+                      icon: Icons.exit_to_app,
+                      title: '로그아웃',
+                      subtitle: '계정에서 로그아웃',
+                      onTap: _logout,
+                    ),
+                  ],
+                ),
+              ],
+            );
+          }
+        },
       ),
     );
   }
 
-  Widget _buildUserProfile() {
+  Widget _buildUserProfile(String profileImage, String userName, String petName, int petLevel) {
     return Card(
       elevation: 4.0,
       child: Padding(
@@ -134,19 +226,26 @@ class _MenuPageState extends State<MenuPage> {
             CircleAvatar(
               radius: 40,
               backgroundColor: Colors.grey[300],
-              child: const Icon(Icons.person, size: 40, color: Colors.white),
+              backgroundImage: profileImage.isNotEmpty
+                  ? NetworkImage(profileImage)
+                  : null,
+              child: profileImage.isEmpty ? const Icon(Icons.person, size: 40, color: Colors.white) : null,
             ),
             const SizedBox(width: 16.0),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Text(
-                  '사용자 이름',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  userName,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  '레벨: 1',
-                  style: TextStyle(fontSize: 16),
+                  '펫 이름: $petName',
+                  style: const TextStyle(fontSize: 16),
+                ),
+                Text(
+                  '레벨: $petLevel',
+                  style: const TextStyle(fontSize: 16),
                 ),
               ],
             ),

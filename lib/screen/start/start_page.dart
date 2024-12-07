@@ -32,12 +32,14 @@ class _StartPageState extends State<StartPage> {
   @override
   void initState() {
     super.initState();
+    _fetchDeviceId();
     _initializeApp();
   }
 
   Future<void> _initializeApp() async {
-    await _fetchDeviceId();
-    await _checkExistingSession();
+    setState(() {
+      isLoading = false;
+    });
   }
 
   // 기기 ID 가져오기
@@ -54,21 +56,18 @@ class _StartPageState extends State<StartPage> {
         }
         try {
           await _secureStorage.write(key: 'deviceId', value: id);
-          print('Access Token 저장 완료');
+          print('1: Device ID 저장 완료');
         } catch (e) {
-          print('Access Token 저장 실패: $e');
+          print('Device ID 저장 실패: $e');
         }
-      } else if (Platform.isIOS) {
-        final iosInfo = await deviceInfo.iosInfo;
-        id = iosInfo.identifierForVendor ?? 'unknown';
       } else if (Platform.isWindows) {
         final windowsInfo = await deviceInfo.windowsInfo;
         id = windowsInfo.deviceId ?? 'unknown'; // Windows ID 가져오기
         try {
           await _secureStorage.write(key: 'deviceId', value: id);
-          print('Access Token 저장 완료');
+          print('2: Device ID 저장 완료');
         } catch (e) {
-          print('Access Token 저장 실패: $e');
+          print('Device ID 저장 실패: $e');
         }
       }
     } catch (e) {
@@ -81,37 +80,28 @@ class _StartPageState extends State<StartPage> {
       deviceId = id;
     });
     print('Device ID: $deviceId');
+    _sendDeviceId();
   }
 
-  // 기존 세션 확인 및 유효성 검사
-  Future<void> _checkExistingSession() async {
-    final existingCookie = await _secureStorage.read(key: 'session_cookie');
-    if (existingCookie != null) {
-      final isValid = await _validateSessionCookie(existingCookie);
-      if (isValid) {
-        Navigator.pushReplacementNamed(context, '/main');
-        return;
-      } else {
-        await _secureStorage.delete(key: 'session_cookie'); // 유효하지 않은 세션 삭제
-        print('❌ 세션 유효하지 않음. 새 로그인 필요.');
-      }
-    }
-    setState(() {
-      isLoading = false; // 로딩 상태 해제
-    });
-  }
+  // 기존 로그인 정보 확인 후 이동 결정
+  Future<void> _checkLoginAndNavigate() async {
+    final accessToken = await _secureStorage.read(key: 'accessToken');
+    final deviceId = await _secureStorage.read(key: 'deviceId');
+    final userId = await _secureStorage.read(key: 'userId');
+    final sessionCookie = await _secureStorage.read(key: 'session_cookie');
 
-  // 세션 유효성 검사
-  Future<bool> _validateSessionCookie(String cookie) async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl${ApiEndpoints.validateSession}'),
-        headers: {'Cookie': 'JSESSIONID=$cookie'},
-      );
-      return response.statusCode == 200;
-    } catch (e) {
-      print('❌ 세션 유효성 검사 중 오류 발생: $e');
-      return false;
+
+    print('토큰: $accessToken');
+    print('기기: $deviceId');
+    print('유저: $userId');
+    print('세션 쿠키: $sessionCookie');
+
+    if (accessToken != null && deviceId != null && userId != null) {
+      print('🎉이전 로그인 기록 확인, 메인 페이지로 이동합니다.');
+      Navigator.pushReplacementNamed(context, '/main');
+    } else {
+      print('🔒로그인 정보가 없습니다. 로그인 페이지로 이동합니다.');
+      Navigator.pushReplacementNamed(context, '/login');
     }
   }
 
@@ -131,7 +121,6 @@ class _StartPageState extends State<StartPage> {
         body: jsonEncode({'id': deviceId}),
         headers: {'Content-Type': 'application/json'},
       );
-
       if (response.statusCode == 200) {
         final cookies = response.headers['set-cookie'];
         if (cookies != null) {
@@ -139,14 +128,8 @@ class _StartPageState extends State<StartPage> {
           RegExp(r'JSESSIONID=([^;]+)').firstMatch(cookies)?.group(1);
           if (sessionId != null) {
             await _secureStorage.write(key: 'session_cookie', value: sessionId);
+            print('세션 쿠키 저장 완료: $sessionId');
           }
-        }
-
-        final isNew = response.headers['isNew'];
-        if (isNew == '1') {
-          Navigator.pushReplacementNamed(context, '/main');
-        } else {
-          Navigator.pushReplacementNamed(context, '/login');
         }
       } else {
         setState(() {
@@ -198,7 +181,7 @@ class _StartPageState extends State<StartPage> {
             Align(
               alignment: const Alignment(0, 0.8),
               child: ElevatedButton(
-                onPressed: _sendDeviceId,
+                onPressed: _checkLoginAndNavigate,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 40, vertical: 15),

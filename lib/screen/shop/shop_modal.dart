@@ -1,55 +1,80 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter/services.dart';
 import 'dart:ui'; // BackdropFilter를 위해 필요
+import 'package:provider/provider.dart';
+import '../../provider/pet_provider.dart'; // PetProvider 추가
 
 class ShopModal extends StatefulWidget {
-  final int currentPoints; // 현재 포인트를 받아옴
-
-  const ShopModal({Key? key, required this.currentPoints}) : super(key: key);
+  const ShopModal({Key? key}) : super(key: key);
 
   @override
   _ShopModalState createState() => _ShopModalState();
 }
 
-class _ShopModalState extends State<ShopModal> {
+class _ShopModalState extends State<ShopModal> with TickerProviderStateMixin {
   int userPoints = 0; // 사용자 포인트 상태 관리
+  final secureStorage = const FlutterSecureStorage();
   final List<String> categories = ['벽지', '바닥'];
   String selectedCategory = '벽지';
-
-  final Map<String, List<Map<String, dynamic>>> items = {
-    '벽지': [
-      {
-        'name': '벽지 1',
-        'image': 'assets/images/background/background_1.png',
-        'price': 500,
-        'isPurchased': false,
-      },
-      {
-        'name': '벽지 2',
-        'image': 'assets/images/background/background_2.png',
-        'price': 700,
-        'isPurchased': false,
-      },
-    ],
-    '바닥': [
-      {
-        'name': '바닥 1',
-        'image': 'assets/images/floor/floor_1.png',
-        'price': 400,
-        'isPurchased': false,
-      },
-      {
-        'name': '바닥 2',
-        'image': 'assets/images/floor/floor_2.png',
-        'price': 600,
-        'isPurchased': false,
-      },
-    ],
-  };
+  Map<String, List<Map<String, dynamic>>> items = {};
+  late AnimationController _animationController;
 
   @override
   void initState() {
     super.initState();
-    userPoints = widget.currentPoints; // 초기 포인트 설정
+    _animationController = BottomSheet.createAnimationController(this);
+    _animationController.duration = const Duration(milliseconds: 300);
+    _animationController.reverseDuration = const Duration(milliseconds: 300);
+    _loadUserPoints();
+    _loadItemsFromServer(); // 서버에서 아이템 불러오기
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadUserPoints() async {
+    final petData = await secureStorage.read(key: 'petData');
+    if (petData != null) {
+      final decodedData = jsonDecode(petData);
+      setState(() {
+        userPoints = decodedData['points'] ?? 0;
+      });
+    }
+  }
+
+  Future<void> _loadItemsFromServer() async {
+    final petProvider = Provider.of<PetProvider>(context, listen: false);
+    try {
+      final range = selectedCategory == '벽지' ? 1000 : 2000; // 카테고리에 따라 범위 선택
+      final itemData = await petProvider.fetchItemsByRange(range); // `await` 추가
+      if (itemData.containsKey('usage')) {
+        setState(() {
+          items[selectedCategory] = (itemData['usage'] as List).map((item) {
+            return {
+              'id': item['id'],
+              'itemId': item['itemId'],
+              'name': '아이템 ${item['itemId']}', // 예시 이름 설정
+              'image': 'assets/images/items/item_${item['itemId']}.png', // 예시 이미지 경로
+              'price': 100, // 예시 가격 설정
+              'isPurchased': false, // 구매 여부 초기화
+            };
+          }).toList();
+        });
+      } else {
+        throw Exception('Invalid item data or missing "usage" key');
+      }
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('아이템 로드 중 오류 발생: $error'),
+        ),
+      );
+    }
   }
 
   @override
@@ -60,13 +85,12 @@ class _ShopModalState extends State<ShopModal> {
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
             child: Container(
-              color: Colors.black.withOpacity(0.3),
             ),
           ),
         ),
         DraggableScrollableSheet(
-          initialChildSize: 0.8,
-          maxChildSize: 0.9,
+          initialChildSize: 0.85,
+          maxChildSize: 1.0,
           minChildSize: 0.6,
           builder: (context, scrollController) {
             return Container(
@@ -105,6 +129,7 @@ class _ShopModalState extends State<ShopModal> {
                                     setState(() {
                                       selectedCategory = category;
                                     });
+                                    _loadItemsFromServer(); // 카테고리 변경 시 서버에서 재로드
                                   },
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
@@ -183,20 +208,20 @@ class _ShopModalState extends State<ShopModal> {
                     )
                         : GridView.builder(
                       padding: const EdgeInsets.all(16.0),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        mainAxisSpacing: 16.0,
-                        crossAxisSpacing: 16.0,
-                        childAspectRatio: 0.8,
+                      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: 230, // 카드의 가로 크기를 고정
+                        mainAxisSpacing: 16.0, // 세로 간격
+                        crossAxisSpacing: 8.0, // 가로 간격
+                        mainAxisExtent: 290, // 카드의 세로 크기 고정
                       ),
                       itemCount: items[selectedCategory]?.length ?? 0,
                       itemBuilder: (BuildContext context, int index) {
                         final item = items[selectedCategory]![index];
                         return _buildProductCard(
-                          name: item['name']!,
-                          image: item['image']!,
-                          price: item['price'],
-                          isPurchased: item['isPurchased'],
+                          name: item['name'] ?? '',
+                          image: item['image'] ?? '',
+                          price: item['price'] ?? 0,
+                          isPurchased: item['isPurchased'] ?? false,
                           onPurchase: () {
                             if (userPoints >= (item['price'] as int)) {
                               setState(() {
@@ -237,46 +262,59 @@ class _ShopModalState extends State<ShopModal> {
     required bool isPurchased,
     required VoidCallback onPurchase,
   }) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12.0),
+    return ConstrainedBox(
+      constraints: const BoxConstraints(
       ),
-      elevation: 4.0,
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          children: [
-            Expanded(
-              child: Image.asset(
-                image,
-                fit: BoxFit.cover,
-              ),
+      child: SizedBox(
+        child: Card(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12.0),
+          ),
+          elevation: 4.0,
+          color: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center, // 세로 중앙 정렬
+              crossAxisAlignment: CrossAxisAlignment.center, // 가로 중앙 정렬
+              children: [
+                SizedBox(
+                  width: 120,
+                  height: 120,
+                  child: Image.asset(
+                    image,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                const SizedBox(height: 8.0),
+                Text(
+                  name,
+                  style: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8.0),
+                Text(
+                  '가격: $price',
+                  style: const TextStyle(fontSize: 14.0, color: Colors.black54),
+                ),
+                const SizedBox(height: 12.0),
+                isPurchased
+                    ? const Text(
+                  '구매 완료',
+                  style: TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                  ),
+                )
+                    : ElevatedButton(
+                  onPressed: onPurchase,
+                  child: const Text('구매하기'),
+                ),
+                const SizedBox(height: 12.0),
+              ],
             ),
-            const SizedBox(height: 8.0),
-            Text(
-              name,
-              style: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8.0),
-            Text(
-              '가격: $price',
-              style: const TextStyle(fontSize: 14.0, color: Colors.black54),
-            ),
-            const SizedBox(height: 12.0),
-            isPurchased
-                ? const Text(
-              '구매 완료',
-              style: TextStyle(
-                color: Colors.green,
-                fontWeight: FontWeight.bold,
-              ),
-            )
-                : ElevatedButton(
-              onPressed: onPurchase,
-              child: const Text('구매하기'),
-            ),
-          ],
+          ),
         ),
       ),
     );
