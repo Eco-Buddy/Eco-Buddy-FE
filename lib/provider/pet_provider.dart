@@ -40,16 +40,17 @@ class Pet {
 class PetProvider with ChangeNotifier {
   final FlutterSecureStorage secureStorage;
   bool isInitialized = false;
+  List<Map<String, dynamic>> items = []; // 아이템 데이터 관리 변수
 
   PetProvider({required this.secureStorage});
 
   /// **Load Pet Data from Server**
   Future<void> loadPetDataFromServer() async {
-    final accessToken = await secureStorage.read(key: 'accessToken');
-    final deviceId = await secureStorage.read(key: 'deviceId');
-    final userId = await secureStorage.read(key: 'userId');
+    final accessToken = await secureStorage.read(key: 'accessToken') ?? '';
+    final deviceId = await secureStorage.read(key: 'deviceId') ?? '';
+    final userId = await secureStorage.read(key: 'userId') ?? '';
 
-    if (accessToken == null || deviceId == null || userId == null) {
+    if (accessToken.isEmpty || deviceId.isEmpty || userId.isEmpty) {
       print('❌ PetProvider: 인증 정보가 없습니다.');
       isInitialized = true;
       notifyListeners();
@@ -91,13 +92,107 @@ class PetProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> updatePetName(String newPetName) async {
-    final accessToken = await secureStorage.read(key: 'accessToken');
-    final deviceId = await secureStorage.read(key: 'deviceId');
-    final userId = await secureStorage.read(key: 'userId');
+  Future<void> updatePetPoints(int newPoints) async {
+    final accessToken = await secureStorage.read(key: 'accessToken') ?? '';
+    final deviceId = await secureStorage.read(key: 'deviceId') ?? '';
+    final userId = await secureStorage.read(key: 'userId') ?? '';
     final petDataString = await secureStorage.read(key: 'petData');
 
-    if (accessToken == null || deviceId == null || userId == null || petDataString == null) {
+    if (accessToken.isEmpty || deviceId.isEmpty || userId.isEmpty || petDataString == null) {
+      print('❌ 인증 정보가 부족합니다.');
+      return;
+    }
+
+    final petData = jsonDecode(petDataString);
+    petData['points'] = newPoints;
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://ecobuddy.kro.kr:4525/pet/save'),
+        headers: {
+          'authorization': accessToken,
+          'deviceId': deviceId,
+          'userId': userId,
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(petData),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        // SecureStorage에 저장
+        await secureStorage.write(
+          key: 'newAccessToken',
+          value: responseData['new_accessToken'],
+        );
+        await secureStorage.write(
+          key: 'petData',
+          value: jsonEncode(petData),
+        );
+
+        notifyListeners(); // UI 업데이트
+        print('✅ 포인트 서버 동기화 및 업데이트 성공');
+      } else {
+        print('❌ 포인트 서버 업데이트 실패: ${response.statusCode}');
+        print('❌ 응답 내용: ${response.body}');
+      }
+    } catch (e) {
+      print('❌ 포인트 업데이트 중 오류 발생: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchItemsByRange(int range) async {
+    final accessToken = await secureStorage.read(key: 'accessToken') ?? '';
+    final deviceId = await secureStorage.read(key: 'deviceId') ?? '';
+    final userId = await secureStorage.read(key: 'userId') ?? '';
+
+    print("test 시빨");
+    print(range);
+
+    if (accessToken.isEmpty || deviceId.isEmpty || userId.isEmpty) {
+      throw Exception('❌ 인증 정보가 부족합니다.');
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://ecobuddy.kro.kr:4525/item/load?range=$range'),
+        headers: {
+          'authorization': accessToken,
+          'deviceId': deviceId,
+          'userId': userId,
+        },
+      );
+
+      print(response.statusCode);
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+
+        // 새로운 액세스 토큰 저장
+        if (responseData['new_accessToken'] != null) {
+          await secureStorage.write(
+            key: 'newAccessToken',
+            value: responseData['new_accessToken'],
+          );
+        }
+
+        // 반환값 반환
+        return responseData; // 아이템 데이터 반환
+      } else {
+        throw Exception('Failed to fetch items. Status code: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching items: $e');
+    }
+  }
+
+
+  Future<void> updatePetName(String newPetName) async {
+    final accessToken = await secureStorage.read(key: 'accessToken') ?? '';
+    final deviceId = await secureStorage.read(key: 'deviceId') ?? '';
+    final userId = await secureStorage.read(key: 'userId') ?? '';
+    final petDataString = await secureStorage.read(key: 'petData');
+
+    if (accessToken.isEmpty || deviceId.isEmpty || userId.isEmpty || petDataString == null) {
       print('❌ 인증 정보가 부족합니다.');
       return;
     }

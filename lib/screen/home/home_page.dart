@@ -58,7 +58,7 @@ class HomePage extends StatelessWidget {
 
         final petData = petSnapshot.data;
         final petName = petData != null ? petData['petName'] ?? '귀여운 펫' : '귀여운 펫';
-        final petPoints = petData != null ? petData['points'] ?? 0 : 0;
+        final petPoints = petData?['points'] ?? 0;
         final backgroundId = petData != null ? petData['background'] : 1001;
         final floorId = petData != null ? petData['floor'] : 2001;
 
@@ -145,10 +145,29 @@ class HomePage extends StatelessWidget {
                   missionRequest: mission['request'],
                   missionContent: "보상: ${mission['reward']} 포인트",
                   missionDescription: mission['description'],
-                  onComplete: () {
+                  onComplete: () async {
                     Navigator.pop(context);
-                    print("미션 완료: ${mission['reward']} 포인트 추가");
+
+                    // 현재 포인트 가져오기
+                    final petData = await _loadPetData();
+                    final currentPoints = petData?['points'] ?? 0;
+                    // 포인트 갱신
+                    final updatedPoints = currentPoints + mission['reward'];
+
+                    // SecureStorage에 업데이트된 포인트 저장
+                    if (petData != null) {
+                      petData['points'] = updatedPoints;
+                      await secureStorage.write(
+                        key: 'petData',
+                        value: jsonEncode(petData),
+                      );
+                    }
+
+                    // PetProvider를 통해 포인트 업데이트 및 서버로 동기화
+                    await Provider.of<PetProvider>(context, listen: false).updatePetPoints(updatedPoints);
+                    print("미션 완료: ${mission['reward']} 포인트 추가, 총 포인트: $updatedPoints");
                   },
+
                   onLater: () {
                     Navigator.pop(context);
                   },

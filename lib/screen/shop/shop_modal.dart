@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/services.dart';
 import 'dart:ui'; // BackdropFilter를 위해 필요
+import 'package:provider/provider.dart';
+import '../../provider/pet_provider.dart'; // PetProvider 추가
 
 class ShopModal extends StatefulWidget {
   const ShopModal({Key? key}) : super(key: key);
@@ -26,7 +28,7 @@ class _ShopModalState extends State<ShopModal> with TickerProviderStateMixin {
     _animationController.duration = const Duration(milliseconds: 300);
     _animationController.reverseDuration = const Duration(milliseconds: 300);
     _loadUserPoints();
-    _loadItemsJson();
+    _loadItemsFromServer(); // 서버에서 아이템 불러오기
   }
 
   @override
@@ -45,15 +47,34 @@ class _ShopModalState extends State<ShopModal> with TickerProviderStateMixin {
     }
   }
 
-  Future<void> _loadItemsJson() async {
-    final String response = await rootBundle.loadString('assets/items/items.json');
-    final data = jsonDecode(response) as Map<String, dynamic>;
-    setState(() {
-      items = {
-        '벽지': List<Map<String, dynamic>>.from(data['벽지'] ?? []),
-        '바닥': List<Map<String, dynamic>>.from(data['바닥'] ?? []),
-      };
-    });
+  Future<void> _loadItemsFromServer() async {
+    final petProvider = Provider.of<PetProvider>(context, listen: false);
+    try {
+      final range = selectedCategory == '벽지' ? 1000 : 2000; // 카테고리에 따라 범위 선택
+      final itemData = await petProvider.fetchItemsByRange(range); // `await` 추가
+      if (itemData.containsKey('usage')) {
+        setState(() {
+          items[selectedCategory] = (itemData['usage'] as List).map((item) {
+            return {
+              'id': item['id'],
+              'itemId': item['itemId'],
+              'name': '아이템 ${item['itemId']}', // 예시 이름 설정
+              'image': 'assets/images/items/item_${item['itemId']}.png', // 예시 이미지 경로
+              'price': 100, // 예시 가격 설정
+              'isPurchased': false, // 구매 여부 초기화
+            };
+          }).toList();
+        });
+      } else {
+        throw Exception('Invalid item data or missing "usage" key');
+      }
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('아이템 로드 중 오류 발생: $error'),
+        ),
+      );
+    }
   }
 
   @override
@@ -108,6 +129,7 @@ class _ShopModalState extends State<ShopModal> with TickerProviderStateMixin {
                                     setState(() {
                                       selectedCategory = category;
                                     });
+                                    _loadItemsFromServer(); // 카테고리 변경 시 서버에서 재로드
                                   },
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
