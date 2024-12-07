@@ -3,9 +3,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutter/services.dart' show rootBundle;
 import '../../provider/pet_provider.dart';
 import '../shop/shop_modal.dart';
+import './mission_dialog.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -23,6 +24,16 @@ class HomePage extends StatelessWidget {
       return jsonDecode(petData);
     }
     return null;
+  }
+
+  Future<List<dynamic>> _loadMissionsJson() async {
+    final String response = await rootBundle.loadString('screen/home/missions.json');
+    return jsonDecode(response);
+  }
+
+  Future<Map<String, dynamic>> _loadItemsJson() async {
+    final String response = await rootBundle.loadString('assets/items/items.json');
+    return jsonDecode(response);
   }
 
   @override
@@ -48,43 +59,68 @@ class HomePage extends StatelessWidget {
         final petData = petSnapshot.data;
         final petName = petData != null ? petData['petName'] ?? '귀여운 펫' : '귀여운 펫';
         final petPoints = petData != null ? petData['points'] ?? 0 : 0;
+        final backgroundId = petData != null ? petData['background'] : 1001;
+        final floorId = petData != null ? petData['floor'] : 2001;
 
-        return FutureBuilder<String>(
-          future: _loadProfileImage(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              // 프로필 이미지 로딩 중 로딩 화면 표시
+        return FutureBuilder<Map<String, dynamic>>(
+          future: _loadItemsJson(),
+          builder: (context, itemsSnapshot) {
+            if (itemsSnapshot.connectionState == ConnectionState.waiting) {
               return const Scaffold(
                 body: Center(child: CircularProgressIndicator()),
               );
             }
 
-            final profileImage = snapshot.data ?? '';
+            final itemsData = itemsSnapshot.data ?? {};
+            final backgroundImage = itemsData['벽지']?.firstWhere(
+                  (item) => item['itemId'] == backgroundId,
+              orElse: () => {'image': 'assets/items/background/background_1.png'},
+            )['image'] ?? 'assets/items/background/background_1.png';
 
-            return Scaffold(
-              body: Stack(
-                children: [
-                  _buildBackground(),
-                  _buildFloor(),
-                  Positioned(
-                    top: 20,
-                    left: 16,
-                    right: 16,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _buildUserProfile(
-                          petName, // Pet 닉네임 표시
-                          profileImage,
+            final floorImage = itemsData['바닥']?.firstWhere(
+                  (item) => item['itemId'] == floorId,
+              orElse: () => {'image': 'assets/items/floor/floor_1.png'},
+            )['image'] ?? 'assets/items/floor/floor_1.png';
+
+            return FutureBuilder<String>(
+              future: _loadProfileImage(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  // 프로필 이미지 로딩 중 로딩 화면 표시
+                  return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
+                }
+
+                final profileImage = snapshot.data ?? '';
+
+                return Scaffold(
+                  body: Stack(
+                    children: [
+                      _buildBackground(backgroundImage),
+                      _buildFloor(floorImage),
+                      Positioned(
+                        top: 20,
+                        left: 16,
+                        right: 16,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _buildUserProfile(
+                              petName, // Pet 닉네임 표시
+                              profileImage,
+                            ),
+                            _buildTokenInfo(petPoints), // Pet 포인트 표시
+                          ],
                         ),
-                        _buildTokenInfo(petPoints), // Pet 포인트 표시
-                      ],
-                    ),
+                      ),
+                      _buildIcons(context),
+                      _buildCharacter(),
+                      _buildTrash(context),
+                    ],
                   ),
-                  _buildIcons(context),
-                  _buildCharacter(),
-                ],
-              ),
+                );
+              },
             );
           },
         );
@@ -92,22 +128,60 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildBackground() {
+  Widget _buildTrash(BuildContext context) {
+    return Positioned(
+      bottom: 150,
+      left: MediaQueryData.fromWindow(WidgetsBinding.instance.window).size.width / 3,
+      child: GestureDetector(
+        onTap: () async {
+          final missions = await _loadMissionsJson();
+          if (missions.isNotEmpty) {
+            final mission = (missions..shuffle()).first; // 랜덤 미션
+            showDialog(
+              context: context,
+              builder: (context) {
+                return MissionDialog(
+                  title: mission['title'],
+                  missionRequest: mission['request'],
+                  missionContent: "보상: ${mission['reward']} 포인트",
+                  missionDescription: mission['description'],
+                  onComplete: () {
+                    Navigator.pop(context);
+                    print("미션 완료: ${mission['reward']} 포인트 추가");
+                  },
+                  onLater: () {
+                    Navigator.pop(context);
+                  },
+                );
+              },
+            );
+          }
+        },
+        child: Image.asset(
+          'assets/images/trash/trash_1.png', // 쓰레기 이미지 경로
+          width: 50,
+          height: 50,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBackground(String backgroundImage) {
     return Positioned.fill(
       child: Image.asset(
-        'assets/images/background/background_1.png',
+        backgroundImage,
         fit: BoxFit.cover,
       ),
     );
   }
 
-  Widget _buildFloor() {
+  Widget _buildFloor(String floorImage) {
     return Positioned(
       bottom: 0,
       left: 0,
       right: 0,
       child: Image.asset(
-        'assets/images/floor/floor_1.png',
+        floorImage,
         fit: BoxFit.cover,
         height: 150,
       ),
@@ -124,11 +198,19 @@ class HomePage extends StatelessWidget {
           _buildIconButton(
             'assets/images/icon/shop_icon.png',
             onTap: () {
-              // 상점 버튼 클릭 시 Shop Modal 팝업
-              showDialog(
+              // 상점 버튼 클릭 시 Shop Modal 팝업 (애니메이션 포함)
+              showModalBottomSheet(
                 context: context,
+                isScrollControlled: true, // 모달의 크기 조정 가능
+                backgroundColor: Colors.transparent,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(20.0),
+                    topRight: Radius.circular(20.0),
+                  ),
+                ),
                 builder: (BuildContext context) {
-                  return ShopModal();
+                  return const ShopModal();
                 },
               );
             },
@@ -148,7 +230,7 @@ class HomePage extends StatelessWidget {
 
   Widget _buildCharacter() {
     return Positioned(
-      top: 300,
+      bottom: 140,
       left: (MediaQueryData.fromWindow(WidgetsBinding.instance.window).size.width - 160) / 2,
       child: Image.asset(
         'assets/images/character/happy-1.png',
@@ -157,6 +239,7 @@ class HomePage extends StatelessWidget {
       ),
     );
   }
+
 
   Widget _buildUserProfile(String petName, String profileImage) {
     return Container(

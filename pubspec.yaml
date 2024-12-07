@@ -47,8 +47,10 @@ flutter:
     - assets/images/profile/
     - assets/images/start/
     - assets/images/trash/
+    - assets/items/items.json
     - lib/data/user/user_data.json
     - assets/design1.png
     - assets/digital_CO2.png
     - assets/images/tray/tray_icon.ico
     - assets/images/tray/tray_icon.png
+    - lib/screen/home/missions.json
