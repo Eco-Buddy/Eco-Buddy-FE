@@ -12,7 +12,6 @@ class ShopModal extends StatefulWidget {
   @override
   _ShopModalState createState() => _ShopModalState();
 }
-
 class _ShopModalState extends State<ShopModal> with TickerProviderStateMixin {
   int userPoints = 0; // 사용자 포인트 상태 관리
   final secureStorage = const FlutterSecureStorage();
@@ -89,6 +88,32 @@ class _ShopModalState extends State<ShopModal> with TickerProviderStateMixin {
         SnackBar(
           content: Text('아이템 로드 중 오류 발생: $error'),
         ),
+      );
+    }
+  }
+
+  Future<void> _purchaseItem(int itemId, int price) async {
+    final petProvider = Provider.of<PetProvider>(context, listen: false);
+    try {
+      final success = await petProvider.purchaseItem(itemId);
+      if (success) {
+        await petProvider.updatePetPoints(userPoints - price); // 포인트 업데이트 호출
+        setState(() {
+          userPoints -= price;
+          purchasedItemIds.add(itemId);
+          items[selectedCategory]?.firstWhere((item) => item['itemId'] == itemId)['isPurchased'] = true;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('구매가 완료되었습니다.')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('구매에 실패했습니다.')),
+        );
+      }
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('구매 중 오류 발생: $error')),
       );
     }
   }
@@ -237,21 +262,8 @@ class _ShopModalState extends State<ShopModal> with TickerProviderStateMixin {
                           name: item['name'] ?? '',
                           image: item['image'] ?? '',
                           price: item['price'] ?? 0,
-                          isPurchased: item['isPurchased'] ?? false,
-                          onPurchase: () {
-                            if (userPoints >= (item['price'] as int)) {
-                              setState(() {
-                                userPoints -= item['price'] as int;
-                                item['isPurchased'] = true;
-                              });
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('포인트가 부족합니다.'),
-                                ),
-                              );
-                            }
-                          },
+                          isPurchased: purchasedItemIds.contains(item['itemId']),
+                          itemId: item['itemId'], // 추가
                         );
                       },
                     ),
@@ -276,7 +288,7 @@ class _ShopModalState extends State<ShopModal> with TickerProviderStateMixin {
     required String image,
     required int price,
     required bool isPurchased,
-    required VoidCallback onPurchase,
+    required int itemId,
   }) {
     return ConstrainedBox(
       constraints: const BoxConstraints(
@@ -324,7 +336,7 @@ class _ShopModalState extends State<ShopModal> with TickerProviderStateMixin {
                   ),
                 )
                     : ElevatedButton(
-                  onPressed: onPurchase,
+                  onPressed: () => _purchaseItem(itemId, price),
                   child: const Text('구매하기'),
                 ),
                 const SizedBox(height: 12.0),

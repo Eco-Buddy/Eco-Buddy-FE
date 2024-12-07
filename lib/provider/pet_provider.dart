@@ -153,7 +153,7 @@ class PetProvider with ChangeNotifier {
 
     try {
       final response = await http.post(
-        Uri.parse('http://ecobuddy.kro.kr:4525/item/load?range=1000'),
+        Uri.parse('http://ecobuddy.kro.kr:4525/item/load?range=$range'),
         headers: {
           'authorization': accessToken,
           'deviceId': deviceId,
@@ -185,6 +185,49 @@ class PetProvider with ChangeNotifier {
     }
   }
 
+  Future<bool> purchaseItem(int itemId) async {
+    final accessToken = await secureStorage.read(key: 'accessToken') ?? '';
+    final deviceId = await secureStorage.read(key: 'deviceId') ?? '';
+    final userId = await secureStorage.read(key: 'userId') ?? '';
+
+    if (accessToken.isEmpty || deviceId.isEmpty || userId.isEmpty) {
+      print('❌ 인증 정보가 부족합니다.');
+      return false;
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://ecobuddy.kro.kr:4525/item/save?item_id=$itemId'),
+        headers: {
+          'authorization': accessToken,
+          'deviceId': deviceId,
+          'userId': userId,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+
+        // 새로운 액세스 토큰 저장
+        if (responseData['new_accessToken'] != null) {
+          await secureStorage.write(
+            key: 'newAccessToken',
+            value: responseData['new_accessToken'],
+          );
+        }
+
+        print('✅ 아이템 구매 성공: 아이템 ID $itemId');
+        return true;
+      } else {
+        print('❌ 아이템 구매 실패: ${response.statusCode}');
+        print('❌ 응답 내용: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('❌ 아이템 구매 중 오류 발생: $e');
+      return false;
+    }
+  }
 
   Future<void> updatePetName(String newPetName) async {
     final accessToken = await secureStorage.read(key: 'accessToken') ?? '';
