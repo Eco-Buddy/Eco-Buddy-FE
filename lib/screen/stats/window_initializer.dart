@@ -212,6 +212,7 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:00 /f
       prefs.setString('lastSavedTotals', json.encode({'date': today, 'totals': currentTotals}));
       await saveDailyUsage(today, {'ethernet': 0, 'wifi': 0});
       await secureStorage.write(key: 'carbonTotal', value: '0');
+      await secureStorage.write(key: 'discount', value: '0');
       await prefs.setBool('isAccumulatingToday', false);
       return;
     }
