@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import '../../provider/pet_provider.dart';
 import '../shop/shop_modal.dart';
+import '../shop/custom_modal.dart';
 import './mission_dialog.dart';
 
 class HomePage extends StatelessWidget {
@@ -269,8 +270,20 @@ class HomePage extends StatelessWidget {
           _buildIconButton(
             'assets/images/icon/custom_icon.png',
             onTap: () {
-              // 커스텀 버튼 클릭 처리
-              print("Custom Icon Clicked");
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true, // 모달의 크기 조정 가능
+                backgroundColor: Colors.transparent,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(20.0),
+                    topRight: Radius.circular(20.0),
+                  ),
+                ),
+                builder: (BuildContext context) {
+                  return const CustomModal();
+                },
+              );
             },
           ),
         ],

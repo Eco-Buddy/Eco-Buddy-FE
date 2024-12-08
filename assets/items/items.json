@@ -16,14 +16,14 @@
     },
     {
       "itemId": 1003,
-      "name": "기본 벽지",
+      "name": "벽지2",
       "image": "assets/items/background/background_1.png",
       "price": 500,
       "isPurchased": false
     },
     {
       "itemId": 1004,
-      "name": "기본 벽지",
+      "name": "벽지3",
       "image": "assets/items/background/background_1.png",
       "price": 500,
       "isPurchased": false
@@ -46,14 +46,14 @@
     },
     {
       "itemId": 2003,
-      "name": "기본 바닥",
+      "name": "벽지2",
       "image": "assets/items/floor/floor_1.png",
       "price": 400,
       "isPurchased": false
     },
     {
       "itemId": 2004,
-      "name": "기본 바닥",
+      "name": "벽지3",
       "image": "assets/items/floor/floor_1.png",
       "price": 400,
       "isPurchased": false

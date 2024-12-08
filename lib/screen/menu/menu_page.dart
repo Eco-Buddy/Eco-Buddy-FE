@@ -190,6 +190,8 @@ class _MenuPageState extends State<MenuPage> {
                       title: '환경 꿀팁',
                       subtitle: '환경을 지키는 유용한 팁들',
                       onTap: () {
+                        final petProvider = Provider.of<PetProvider>(context, listen: false); // Provider 사용
+                        petProvider.printAllSecureStorage();
                         // 환경 꿀팁 페이지로 이동
                         print('환경 꿀팁 클릭됨');
                       },
