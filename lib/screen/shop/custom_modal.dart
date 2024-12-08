@@ -6,7 +6,9 @@ import 'package:provider/provider.dart';
 import '../../provider/pet_provider.dart'; // PetProvider 추가
 
 class CustomModal extends StatefulWidget {
-  const CustomModal({Key? key}) : super(key: key);
+  final Function(int? backgroundId, int? floorId) onItemsSelected; // Add callback
+
+  const CustomModal({Key? key, required this.onItemsSelected}) : super(key: key);
 
   @override
   _CustomModalState createState() => _CustomModalState();
@@ -157,11 +159,22 @@ class _CustomModalState extends State<CustomModal> with TickerProviderStateMixin
                     }).toList(),
                   ),
                   ElevatedButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('선택이 결정되었습니다.')),
-                      );
-                      // 추가적인 결정 로직 처리 가능
+                    onPressed: () async {
+                      if (selectedBackgroundId == null || selectedFloorId == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('아이템을 선택하세요.')),
+                        );
+                        return;
+                      }
+                      print('Final selection: backgroundId: $selectedBackgroundId, floorId: $selectedFloorId');
+
+                      // PetProvider를 통해 서버로 데이터 전달
+                      final petProvider = Provider.of<PetProvider>(context, listen: false);
+                      await petProvider.updateBackgroundAndFloor(selectedBackgroundId!, selectedFloorId!);
+                      Navigator.pop(context, {
+                        'backgroundId': selectedBackgroundId,
+                        'floorId': selectedFloorId,
+                      });
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green, // 버튼 색상
@@ -190,26 +203,26 @@ class _CustomModalState extends State<CustomModal> with TickerProviderStateMixin
 
     return GestureDetector(
       onTap: () {
-        if (!isSelected) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${item['name']} 선택됨')),
-          );
-          setState(() {
-            if (selectedCategory == '벽지') {
-              selectedBackgroundId = item['itemId'];
-            } else {
-              selectedFloorId = item['itemId'];
-            }
-          });
-        }
+        setState(() {
+          // 카테고리에 따라 선택된 아이템 ID 저장
+          if (selectedCategory == '벽지') {
+            selectedBackgroundId = item['itemId'];
+          } else {
+            selectedFloorId = item['itemId'];
+          }
+        });
+
+        print('Item selected: ${item['name']}, ID: ${item['itemId']}');
+        // 선택한 데이터를 부모 위젯에 전달
+        widget.onItemsSelected(selectedBackgroundId, selectedFloorId);
       },
       child: Container(
         width: 120,
         margin: const EdgeInsets.only(right: 16.0),
         decoration: BoxDecoration(
           border: Border.all(
-            color: isSelected ? Colors.green : Colors.grey,
-            width: 2.0,
+            color: isSelected ? Colors.green : Colors.grey, // 선택된 상태 표시
+            width: isSelected ? 4.0 : 2.0,
           ),
           borderRadius: BorderRadius.circular(12.0),
           color: Colors.white,
@@ -218,14 +231,14 @@ class _CustomModalState extends State<CustomModal> with TickerProviderStateMixin
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image.asset(
-              item['image'],
+              item['image'], // 아이템 이미지
               width: 80,
               height: 80,
               fit: BoxFit.cover,
             ),
             const SizedBox(height: 8.0),
             Text(
-              item['name'],
+              item['name'], // 아이템 이름
               style: const TextStyle(fontSize: 16.0),
               textAlign: TextAlign.center,
             ),

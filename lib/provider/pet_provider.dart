@@ -41,8 +41,25 @@ class PetProvider with ChangeNotifier {
   final FlutterSecureStorage secureStorage;
   bool isInitialized = false;
   List<Map<String, dynamic>> items = []; // 아이템 데이터 관리 변수
-
   PetProvider({required this.secureStorage});
+
+  Future<int> getCurrentBackgroundId() async {
+    final petDataString = await secureStorage.read(key: 'petData');
+    if (petDataString != null) {
+      final petData = jsonDecode(petDataString);
+      return petData['background'];
+    }
+    return 1001; // 기본값
+  }
+
+  Future<int> getCurrentFloorId() async {
+    final petDataString = await secureStorage.read(key: 'petData');
+    if (petDataString != null) {
+      final petData = jsonDecode(petDataString);
+      return petData['floor'];
+    }
+    return 2001; // 기본값
+  }
 
   /// **Load Pet Data from Server**
   Future<void> loadPetDataFromServer() async {
@@ -226,6 +243,56 @@ class PetProvider with ChangeNotifier {
     } catch (e) {
       print('❌ 아이템 구매 중 오류 발생: $e');
       return false;
+    }
+  }
+
+  Future<void> updateBackgroundAndFloor(int backgroundId, int floorId) async {
+    final accessToken = await secureStorage.read(key: 'accessToken') ?? '';
+    final deviceId = await secureStorage.read(key: 'deviceId') ?? '';
+    final userId = await secureStorage.read(key: 'userId') ?? '';
+    final petDataString = await secureStorage.read(key: 'petData');
+
+    if (accessToken.isEmpty || deviceId.isEmpty || userId.isEmpty || petDataString == null) {
+      print('❌ 인증 정보가 부족합니다.');
+      return;
+    }
+
+    final petData = jsonDecode(petDataString);
+    petData['background'] = backgroundId;
+    petData['floor'] = floorId;
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://ecobuddy.kro.kr:4525/pet/save'),
+        headers: {
+          'authorization': accessToken,
+          'deviceId': deviceId,
+          'userId': userId,
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(petData),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        // SecureStorage에 저장
+        await secureStorage.write(
+          key: 'newAccessToken',
+          value: responseData['new_accessToken'],
+        );
+        await secureStorage.write(
+          key: 'petData',
+          value: jsonEncode(petData),
+        );
+
+        notifyListeners(); // UI 업데이트
+        print('✅ 배경 및 바닥 서버 동기화 및 업데이트 성공');
+      } else {
+        print('❌ 배경 및 바닥 업데이트 실패: ${response.statusCode}');
+        print('❌ 응답 내용: ${response.body}');
+      }
+    } catch (e) {
+      print('❌ 배경 및 바닥 업데이트 중 오류 발생: $e');
     }
   }
 
