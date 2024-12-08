@@ -175,47 +175,16 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:00 /f
   }
 
   // Helper function to handle counter resets
-  int calculateDailyDelta({required int currentValue, required int previousValue}) {
+  int calculateDailyDelta({required int currentValue, required int previousValue,}) {
     if (currentValue >= previousValue) {
+      // 정상적인 경우
       return currentValue - previousValue;
     } else {
+      // 재부팅된 경우: 현재 값을 반환
       return currentValue;
     }
   }
 
-  // Future<void> saveDebugOutput(Map<String, int> currentTotals) async {
-  //   try {
-  //     // Retrieve SharedPreferences instance
-  //     final prefs = await SharedPreferences.getInstance();
-  //
-  //     // Gather all preference keys and values
-  //     final Map<String, dynamic> allPreferences = {
-  //       "weeklyDataUsage": prefs.getString('weeklyDataUsage') ?? '{}',
-  //       "hourlyDataUsage": prefs.getString('hourlyDataUsage') ?? '{}',
-  //       "lastSavedTotals": prefs.getString('lastSavedTotals') ?? '{}',
-  //     };
-  //
-  //     // Prepare file to save debug output
-  //     final directory = Directory.current; // Use app-specific directory in production
-  //     final filePath = '${directory.path}/debug_output.txt';
-  //
-  //     // Format data to save
-  //     final timestamp = DateTime.now().toIso8601String();
-  //     final debugData = {
-  //       "timestamp": timestamp,
-  //       "preferences": allPreferences,
-  //       "currentTotals": currentTotals
-  //     };
-  //
-  //     // Append data to the file
-  //     final file = File(filePath);
-  //     await file.writeAsString('${jsonEncode(debugData)}\n', mode: FileMode.append);
-  //
-  //     print('Debug output saved to $filePath');
-  //   } catch (e) {
-  //     print('Error saving debug output: $e');
-  //   }
-  // }
 
   Future<void> updateDailyUsage() async {
     final prefs = await SharedPreferences.getInstance();
@@ -231,46 +200,59 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:00 /f
     final currentTotals = await fetchCurrentUsage();
     // await saveDebugOutput(currentTotals);
 
+    const secureStorage = FlutterSecureStorage();
+
+    bool isAccumulatingToday = prefs.getBool('isAccumulatingToday') ?? false;
+    final lastSavedDate = lastSavedData['date'] ?? '';
+    final lastTotals = Map<String, int>.from(lastSavedData['totals'] ?? {});
+    bool isFirstSaveToday = lastSavedDate != today;
+
     // Case 1: First launch or no saved totals
     if (lastSavedData.isEmpty) {
       prefs.setString('lastSavedTotals', json.encode({'date': today, 'totals': currentTotals}));
       await saveDailyUsage(today, {'ethernet': 0, 'wifi': 0});
+      await secureStorage.write(key: 'carbonTotal', value: '0');
+      await prefs.setBool('isAccumulatingToday', false);
       return;
     }
 
-    // Load previous totals and date
-    final lastSavedDate = lastSavedData['date'] ?? '';
-    final lastTotals = Map<String, int>.from(lastSavedData['totals'] ?? {});
-
     // Case 2: If the date has changed, calculate usage for the previous day(s)
-    if (lastSavedDate != today) {
+    if (isFirstSaveToday) {
+      isAccumulatingToday = false; // 새로운 날이 시작되면 누적 해제
       DateTime lastDate = DateTime.parse(lastSavedDate);
+
       while (lastDate.isBefore(DateTime.now())) {
         final missedDate = lastDate.toIso8601String().split('T')[0];
 
         if (missedDate == lastSavedDate) {
-          // Calculate usage for the last active day
-          final dailyUsage = {
-            'ethernet': calculateDailyDelta(
-              currentValue: currentTotals['ethernetInOctets'] ?? 0,
-              previousValue: lastTotals['ethernetInOctets'] ?? 0,
-            ) + calculateDailyDelta(
-              currentValue: currentTotals['ethernetOutOctets'] ?? 0,
-              previousValue: lastTotals['ethernetOutOctets'] ?? 0,
-            ),
-            'wifi': calculateDailyDelta(
-              currentValue: currentTotals['wifiInOctets'] ?? 0,
-              previousValue: lastTotals['wifiInOctets'] ?? 0,
-            ) + calculateDailyDelta(
-              currentValue: currentTotals['wifiOutOctets'] ?? 0,
-              previousValue: lastTotals['wifiOutOctets'] ?? 0,
-            ),
-          };
+          // 오늘 데이터 저장
+          int ethernetUsage = calculateDailyDelta(
+            currentValue: currentTotals['ethernetInOctets'] ?? 0,
+            previousValue: lastTotals['ethernetInOctets'] ?? 0,
+          ) + calculateDailyDelta(
+            currentValue: currentTotals['ethernetOutOctets'] ?? 0,
+            previousValue: lastTotals['ethernetOutOctets'] ?? 0,
+          );
 
-          weeklyData[missedDate] = dailyUsage;
+          int wifiUsage = calculateDailyDelta(
+            currentValue: currentTotals['wifiInOctets'] ?? 0,
+            previousValue: lastTotals['wifiInOctets'] ?? 0,
+          ) + calculateDailyDelta(
+            currentValue: currentTotals['wifiOutOctets'] ?? 0,
+            previousValue: lastTotals['wifiOutOctets'] ?? 0,
+          );
+
+          // 재부팅 여부 감지 및 플래그 설정
+          if (currentTotals['ethernetInOctets']! < lastTotals['ethernetInOctets']! ||
+              currentTotals['wifiInOctets']! < lastTotals['wifiInOctets']!) {
+            isAccumulatingToday = true;
+          }
+
+          weeklyData[today] = {'ethernet': ethernetUsage, 'wifi': wifiUsage}; // 올바른 값 저장
         } else {
           // Fill missing days with 0 usage
           weeklyData[missedDate] = {'ethernet': 0, 'wifi': 0};
+          await secureStorage.write(key: 'carbonTotal', value: '0');
         }
 
         lastDate = lastDate.add(const Duration(days: 1));
@@ -280,8 +262,8 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:00 /f
       weeklyData.removeWhere((key, _) => DateTime.parse(key).isBefore(sevenDaysAgo));
 
       prefs.setString('lastSavedTotals', json.encode({'date': today, 'totals': currentTotals}));
-      // Save updated weekly data
       prefs.setString('weeklyDataUsage', json.encode(weeklyData));
+      await prefs.setBool('isAccumulatingToday', isAccumulatingToday);
       return;
     }
 
@@ -302,7 +284,18 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:00 /f
         previousValue: lastTotals['wifiOutOctets'] ?? 0,
       ),
     };
+
+    // 실시간에서 재부팅 감지 및 플래그 설정
+    if (currentTotals['ethernetInOctets']! < lastTotals['ethernetInOctets']! ||
+        currentTotals['wifiInOctets']! < lastTotals['wifiInOctets']!) {
+      isAccumulatingToday = true;
+    }
+
     await saveDailyUsage(today, realTimeUsage);
+    final ethernetUsageMB = realTimeUsage['ethernet']! / (1024 * 1024);
+    final wifiUsageMB = realTimeUsage['wifi']! / (1024 * 1024);
+    final realTimeCarbonFootprint = (ethernetUsageMB * 11) + (wifiUsageMB * 8.6);
+    await secureStorage.write(key: 'carbonTotal', value: realTimeCarbonFootprint.toString());
   }
 
 

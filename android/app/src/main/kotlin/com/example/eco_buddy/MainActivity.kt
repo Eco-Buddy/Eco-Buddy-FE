@@ -178,7 +178,7 @@ class MainActivity : FlutterActivity() {
                 add(Calendar.MINUTE, 5) // Trigger after 1 minute for debugging
             } else {
                 add(Calendar.HOUR_OF_DAY, 1)
-                set(Calendar.MINUTE, 0)
+                set(Calendar.MINUTE, 2)
                 set(Calendar.SECOND, 0)
             }
         }
@@ -602,7 +602,7 @@ class MainActivity : FlutterActivity() {
 
             val calendar = Calendar.getInstance().apply {
                 add(Calendar.HOUR_OF_DAY, 1)
-                set(Calendar.MINUTE, 0)
+                set(Calendar.MINUTE, 2)
                 set(Calendar.SECOND, 0)
             }
 
