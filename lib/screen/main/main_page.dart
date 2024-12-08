@@ -56,7 +56,6 @@ class _MainPageState extends State<MainPage> {
     try {
       // 서버에서 데이터 가져오기 (항상 실행)
       await petProvider.loadPetDataFromServer();
-      //await petProvider.printAllSecureStorage();
     } catch (e) {
       print('❌ 펫 데이터 초기화 중 오류 발생: $e');
       setState(() {
@@ -71,6 +70,8 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
+    final secureStorage = const FlutterSecureStorage(); // FlutterSecureStorage 객체 생성
+
     if (isLoading) {
       // 로딩 화면 표시
       return const Scaffold(
@@ -106,6 +107,7 @@ class _MainPageState extends State<MainPage> {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => CharacterProvider()), // CharacterProvider 등록
+        ChangeNotifierProvider(create: (_) => PetProvider(secureStorage: secureStorage)), // PetProvider 등록
       ],
       child: Scaffold(
         body: IndexedStack(

@@ -18,11 +18,10 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  String _backgroundImage = '';
-  String _floorImage = '';
-  String _profileImage = '';
-  String _petName = '귀여운 펫';
-  int _petPoints = 0;
+  String _backgroundImage = "assets/items/background/background_1.png";
+  String _floorImage = "assets/items/floor/floor_1.png";
+  String _profileImage = "assets/images/profile/default.png";
+  String _userName = '사용자 이름';
   late Map<String, dynamic> _itemsData;
   final secureStorage = const FlutterSecureStorage();
 
@@ -30,6 +29,11 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _initializeData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final characterProvider = Provider.of<CharacterProvider>(context, listen: false);
+      characterProvider.startWalking(context);
+      characterProvider.updateEmotion('happy'); // 감정 변경 예제
+    });
   }
 
   Future<List<dynamic>> _loadMissionsJson() async {
@@ -44,22 +48,46 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _initializeData() async {
     try {
-      final petData = await _loadPetData();
+      final userData = await _loadUserData();
       _itemsData = await _loadItemsJson();
 
-      final backgroundId = petData?['background'] ?? 1001;
-      final floorId = petData?['floor'] ?? 2001;
+      final petDataString = await secureStorage.read(key: 'petData');
+      if (petDataString != null) {
+        final petData = jsonDecode(petDataString);
+
+        // PetProvider 초기값 설정
+        final petProvider = Provider.of<PetProvider>(context, listen: false);
+        petProvider.setPet(Pet.fromJson(petData)); // Provider와 동기화
+      }
+
+      final backgroundId = userData['background'] ?? 1001;
+      final floorId = userData['floor'] ?? 2001;
 
       setState(() {
         _backgroundImage = _getItemImageById('벽지', backgroundId);
         _floorImage = _getItemImageById('바닥', floorId);
-        _profileImage = petData?['profileImage'] ?? '';
-        _petName = petData?['petName'] ?? '귀여운 펫';
-        _petPoints = petData?['points'] ?? 0;
+        _profileImage = userData['profileImage'] ?? '';
+        _userName = userData['userName'] ?? '사용자 이름';
       });
     } catch (e) {
       print('Error initializing data: $e');
     }
+  }
+
+  Future<Map<String, dynamic>> _loadUserData() async {
+    final profileImage = await secureStorage.read(key: 'profileImage') ?? '';
+    final userName = await secureStorage.read(key: 'userName') ?? '사용자 이름';
+    final petDataString = await secureStorage.read(key: 'petData');
+    Map<String, dynamic> petData = {};
+    if (petDataString != null) {
+      petData = jsonDecode(petDataString);
+    }
+    return {
+      'profileImage': profileImage,
+      'userName': userName,
+      'background': petData['background'],
+      'floor': petData['floor'],
+    };
   }
 
   String _getItemImageById(String category, int itemId) {
@@ -77,14 +105,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<Map<String, dynamic>?> _loadPetData() async {
-    final petData = await secureStorage.read(key: 'petData');
-    if (petData != null) {
-      return jsonDecode(petData);
-    }
-    return null;
-  }
-
   Future<Map<String, dynamic>> _loadItemsJson() async {
     final String response = await rootBundle.loadString('assets/items/items.json');
     return jsonDecode(response);
@@ -92,11 +112,14 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final petProvider = Provider.of<PetProvider>(context);
+
     return Scaffold(
       body: Stack(
         children: [
           _buildBackground(_backgroundImage),
           _buildFloor(_floorImage),
+          _buildCharacter(context),
           Positioned(
             top: 20,
             left: 16,
@@ -104,13 +127,12 @@ class _HomePageState extends State<HomePage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildUserProfile(_petName, _profileImage),
-                _buildTokenInfo(_petPoints),
+                _buildUserProfile(petProvider.petName, _profileImage),
+                _buildTokenInfo(petProvider.petPoints),
               ],
             ),
           ),
           _buildIcons(context),
-          _buildCharacter(context),
           _buildTrash(context),
           _buildQuestButton(context),
         ],
@@ -119,6 +141,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildTrash(BuildContext context) {
+    final petProvider = Provider.of<PetProvider>(context);
     return Positioned(
       bottom: 150,
       left: MediaQueryData.fromWindow(WidgetsBinding.instance.window).size.width / 3,
@@ -138,23 +161,10 @@ class _HomePageState extends State<HomePage> {
                   onComplete: () async {
                     Navigator.pop(context);
 
-                    // 현재 포인트 가져오기
-                    final petData = await _loadPetData();
-                    final currentPoints = petData?['points'] ?? 0;
                     // 포인트 갱신
-                    final updatedPoints = currentPoints + mission['reward'];
+                    final updatedPoints = petProvider.petPoints + (mission['reward'] as int);
+                    await petProvider.updatePetPoints(updatedPoints);
 
-                    // SecureStorage에 업데이트된 포인트 저장
-                    if (petData != null) {
-                      petData['points'] = updatedPoints;
-                      await secureStorage.write(
-                        key: 'petData',
-                        value: jsonEncode(petData),
-                      );
-                    }
-
-                    // PetProvider를 통해 포인트 업데이트 및 서버로 동기화
-                    await Provider.of<PetProvider>(context, listen: false).updatePetPoints(updatedPoints);
                     print("미션 완료: ${mission['reward']} 포인트 추가, 총 포인트: $updatedPoints");
                   },
 
@@ -325,7 +335,7 @@ class _HomePageState extends State<HomePage> {
           CircleAvatar(
             radius: 24,
             backgroundColor: const Color(0xFFA57C50),
-            backgroundImage: profileImage.isNotEmpty
+            backgroundImage: profileImage.startsWith('http')
                 ? NetworkImage(profileImage) as ImageProvider
                 : const AssetImage('assets/images/profile/default.png'),
           ),

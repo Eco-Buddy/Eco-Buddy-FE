@@ -20,17 +20,22 @@ class CharacterProvider with ChangeNotifier {
   }
 
   void startWalking(BuildContext context) {
-    _movingRight = _random.nextBool(); // 방향 랜덤 지정
     final screenWidth = MediaQuery.of(context).size.width;
     print('Walking started with screenWidth: $screenWidth'); // 디버깅 로그
+
+    // 여기서 캐릭터가 처음 시작할 때부터 걷기 시작
+    _moveCharacter(screenWidth, steps: 1, speed: 100); // 한번의 작은 걸음으로 시작
+
     _walkTimer?.cancel();
     _walkTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       print('Timer triggered');
+      _movingRight = _random.nextBool(); // 랜덤으로 이동 방향 설정
       int randomSteps = _random.nextInt(3) + 1; // 1~3 걸음 랜덤 설정
       double randomSpeed = _random.nextDouble() * 100 + 50; // 50~150ms 랜덤 속도 설정
       _moveCharacter(screenWidth, steps: randomSteps, speed: randomSpeed); // 랜덤 걸음 수와 속도 적용
     });
   }
+
 
   void _moveCharacter(double screenWidth, {required int steps, required double speed}) {
     if (character.emotion != 'happy') return; // happy 상태에서만 움직임
@@ -52,11 +57,9 @@ class CharacterProvider with ChangeNotifier {
 
       final currentX = character.position.dx;
       if (_movingRight && currentX + stepDistance + 160 >= screenWidth) {
-        _movingRight = false; // 오른쪽 경계 도달 시 방향 변경 및 랜덤 방향 설정
         _movingRight = false; // 오른쪽 경계 도달 시 방향 변경
       } else if (!_movingRight && currentX - stepDistance <= 0) {
-        _movingRight = true; // 왼쪽 경계 도달 시 방향 변경 및 랜덤 방향 설정
-        _movingRight = true; // 왼쪽 경계 도달 시 방향 변경
+        _movingRight = true; // 왼쪽 경계 도달 시 방향 변경 및
       }
 
       final newPosition = Offset(
