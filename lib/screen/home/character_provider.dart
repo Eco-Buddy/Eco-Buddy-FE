@@ -38,7 +38,7 @@ class CharacterProvider with ChangeNotifier {
 
 
   void _moveCharacter(double screenWidth, {required int steps, required double speed}) {
-    if (character.emotion != 'happy') return; // happy 상태에서만 움직임
+    if (character.emotion != 'happy' && character.emotion != 'normal')  return; // happy 상태에서만 움직임
 
     character.isWalking = true; // 걷는 상태로 변경
     character.updateWalkFrame(); // 걷기 애니메이션 초기화

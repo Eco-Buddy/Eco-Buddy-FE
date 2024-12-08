@@ -31,11 +31,48 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _initializeData();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final characterProvider = Provider.of<CharacterProvider>(context, listen: false);
+
+      // Secure Storage에서 carbonTotal과 discount를 읽음
+      _loadCarbonData().then((carbonData) async {
+        final carbonTotal = carbonData['carbonTotal'];
+        final discount = carbonData['discount'];
+
+        print(carbonTotal); // 확인용 로그
+
+        // carbonTotal - discount 계산
+        final result = carbonTotal - discount;
+
+        // 결과가 10000보다 크면 'unhappy'로 감정 업데이트
+        if (result > 10000) {
+          characterProvider.updateEmotion('sad');
+          print('sad: $result');
+        } else {
+          characterProvider.updateEmotion('normal');
+          print('normal: $result');
+        }
+      });
+
       characterProvider.startWalking(context);
-      characterProvider.updateEmotion('happy'); // 감정 변경 예제
     });
+  }
+
+  Future<Map<String, dynamic>> _loadCarbonData() async {
+    try {
+      final carbonTotal = await secureStorage.read(key: 'carbonTotal');
+      final discount = await secureStorage.read(key: 'discount');
+      print(carbonTotal);
+      print(discount);
+      return {
+        'carbonTotal': carbonTotal != null ? int.tryParse(carbonTotal) ?? 0 : 0,
+        'discount': discount != null ? int.tryParse(discount) ?? 0 : 0,
+      };
+    } catch (e) {
+      print('Error loading carbon data: $e');
+      return {'carbonTotal': 0, 'discount': 0};
+    }
   }
 
   Future<List<dynamic>> _loadMissionsJson() async {
@@ -320,7 +357,7 @@ class _HomePageState extends State<HomePage> {
       left: characterProvider.character.position.dx,
       child: GestureDetector(
         onTap: () {
-          characterProvider.updateEmotion('happy'); // 감정 변경 예제
+
         },
         child: Transform(
           alignment: Alignment.center,
