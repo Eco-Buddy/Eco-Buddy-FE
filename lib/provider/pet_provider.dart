@@ -346,16 +346,22 @@ class PetProvider with ChangeNotifier {
     final petData = jsonDecode(petDataString);
     petData['background'] = backgroundId;
     petData['floor'] = floorId;
-
+    print('결정:$petData');
+    await secureStorage.write(key: 'petData', value: jsonEncode(petData));
+    final accessToken = await secureStorage.read(key: 'accessToken') ?? '';
+    final deviceId = await secureStorage.read(key: 'deviceId') ?? '';
+    final userId = await secureStorage.read(key: 'userId') ?? '';
     try {
       await http.post(
         Uri.parse('http://ecobuddy.kro.kr:4525/pet/save'),
         headers: {
+          'authorization': accessToken,
+          'deviceId': deviceId,
+          'userId': userId,
           'Content-Type': 'application/json',
         },
         body: jsonEncode(petData),
       );
-
       notifyListeners();
     } catch (e) {
       print('Error updating background and floor: $e');
