@@ -119,12 +119,12 @@ class _MenuPageState extends State<MenuPage> {
       // 펫 이름을 업데이트하는 메서드 호출
       await Provider.of<PetProvider>(context, listen: false).updatePetName(newPetName!);
       // 로컬 스토리지에 업데이트된 펫 이름 저장
-      final petDataString = await _secureStorage.read(key: 'petData');
-      if (petDataString != null) {
-        final petData = jsonDecode(petDataString);
-        petData['petName'] = newPetName;
-        await _secureStorage.write(key: 'petData', value: jsonEncode(petData));
-      }
+      // final petDataString = await _secureStorage.read(key: 'petData');
+      // if (petDataString != null) {
+      //   final petData = jsonDecode(petDataString);
+      //   petData['petName'] = newPetName;
+      //   await _secureStorage.write(key: 'petData', value: jsonEncode(petData));
+      // }
       // 성공적으로 업데이트 되었으면 UI도 갱신할 수 있습니다.
       setState(() {}); // UI 업데이트
       ScaffoldMessenger.of(context).showSnackBar(
@@ -161,9 +161,24 @@ class _MenuPageState extends State<MenuPage> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('오류가 발생했습니다.')); // 오류 처리
-          } else {
+          }
+          else if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('오류가 발생했습니다.'),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {}); // FutureBuilder를 다시 빌드
+                    },
+                    child: const Text('다시 시도'),
+                  ),
+                ],
+              ),
+            );
+          }
+          else {
             final data = snapshot.data!;
             return ListView(
               padding: const EdgeInsets.all(16.0),
@@ -190,6 +205,8 @@ class _MenuPageState extends State<MenuPage> {
                       title: '환경 꿀팁',
                       subtitle: '환경을 지키는 유용한 팁들',
                       onTap: () {
+                        final petProvider = Provider.of<PetProvider>(context, listen: false); // Provider 사용
+                        petProvider.printAllSecureStorage();
                         // 환경 꿀팁 페이지로 이동
                         print('환경 꿀팁 클릭됨');
                       },
@@ -226,7 +243,7 @@ class _MenuPageState extends State<MenuPage> {
             CircleAvatar(
               radius: 40,
               backgroundColor: Colors.grey[300],
-              backgroundImage: profileImage.isNotEmpty
+              backgroundImage: profileImage.startsWith('http')
                   ? NetworkImage(profileImage)
                   : null,
               child: profileImage.isEmpty ? const Icon(Icons.person, size: 40, color: Colors.white) : null,

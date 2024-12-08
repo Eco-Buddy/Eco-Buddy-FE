@@ -46,11 +46,14 @@ Future<void> main(List<String> args) async {
         });
 
     WindowOptions windowOptions = const WindowOptions(
-      size: Size(800, 600),
-      skipTaskbar: false,
+      size: Size(800, 600), // 창 기본 크기
+      maximumSize: Size(800, 600), // 최대 크기 고정
+      minimumSize: Size(800, 600), // 최소 크기 고정
+      skipTaskbar: false, // 작업 표시줄에 표시
     );
     windowManager.waitUntilReadyToShow(windowOptions, () async {
-      await windowManager.hide();
+      await windowManager.show();
+      await windowManager.focus();
     });
 
     if (Platform.isWindows) {

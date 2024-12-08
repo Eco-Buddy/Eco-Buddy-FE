@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:provider/provider.dart'; // Provider import
+import 'package:provider/provider.dart';
 import '../stats/digital_carbon_page.dart';
 import '../stats/windows_display.dart';
 import '../stats/window_initializer.dart';
@@ -10,6 +10,8 @@ import '../menu/menu_page.dart';
 import '../../common/widget/custom_bottom_bar.dart';
 import '../../provider/pet_provider.dart'; // PetProvider import
 import '../stats/mobile_initializer.dart';
+import '../../provider/pet_provider.dart';
+import '../home/character_provider.dart'; // CharacterProvider import
 
 class MainPage extends StatefulWidget {
   const MainPage({Key? key}) : super(key: key);
@@ -74,12 +76,11 @@ class _MainPageState extends State<MainPage> {
   }
 
   Future<void> _initializePetData() async {
-    final petProvider = Provider.of<PetProvider>(context, listen: false); // Provider 사용
+    final petProvider = Provider.of<PetProvider>(context, listen: false);
 
     try {
       // 서버에서 데이터 가져오기 (항상 실행)
       await petProvider.loadPetDataFromServer();
-      await petProvider.printAllSecureStorage();
     } catch (e) {
       print('❌ 펫 데이터 초기화 중 오류 발생: $e');
       setState(() {
@@ -89,12 +90,13 @@ class _MainPageState extends State<MainPage> {
       setState(() {
         isLoading = false; // 로딩 상태 종료
       });
-
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final secureStorage = const FlutterSecureStorage(); // FlutterSecureStorage 객체 생성
+
     if (isLoading) {
       // 로딩 화면 표시
       return const Scaffold(
@@ -126,24 +128,29 @@ class _MainPageState extends State<MainPage> {
       );
     }
 
-    // 정상적인 페이지 렌더링
-    return Scaffold(
-      body: IndexedStack(
-        index: currentIndex,
-        children: pages,
-      ),
-      bottomNavigationBar: CustomBottomBar(
-        currentIndex: currentIndex,
-        onTap: (index) {
-          setState(() {
-            if (index == currentIndex && index == 0) {
-              // 통계 페이지 클릭 시 새로고침
-              _refreshStatsPage();
-            } else {
-              currentIndex = index;
-            }
-          });
-        },
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => CharacterProvider()), // CharacterProvider 등록
+        ChangeNotifierProvider(create: (_) => PetProvider(secureStorage: secureStorage)), // PetProvider 등록
+      ],
+      child: Scaffold(
+        body: IndexedStack(
+          index: currentIndex,
+          children: pages,
+        ),
+        bottomNavigationBar: CustomBottomBar(
+          currentIndex: currentIndex,
+          onTap: (index) {
+            setState(() {
+              if (index == currentIndex && index == 0) {
+                // 통계 페이지 클릭 시 새로고침
+                _refreshStatsPage();
+              } else {
+                currentIndex = index;
+              }
+            });
+          },
+        ),
       ),
     );
   }

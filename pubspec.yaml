@@ -55,3 +55,4 @@ flutter:
     - assets/images/tray/tray_icon.ico
     - assets/images/tray/tray_icon.png
     - lib/screen/home/missions.json
+    - assets/images/profile/default.png

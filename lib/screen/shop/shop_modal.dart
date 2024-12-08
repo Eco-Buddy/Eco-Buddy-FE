@@ -50,7 +50,8 @@ class _ShopModalState extends State<ShopModal> with TickerProviderStateMixin {
   Future<void> _loadItemsFromServer() async {
     final petProvider = Provider.of<PetProvider>(context, listen: false);
     try {
-      final range = selectedCategory == '벽지' ? 1000 : 2000; // 카테고리에 따라 범위 선택
+      // 2. 서버에서 데이터 가져오기
+      final range = selectedCategory == '벽지' ? 1000 : 2000;
       final itemData = await petProvider.fetchItemsByRange(range);
 
       if (itemData.containsKey('items')) {
@@ -62,23 +63,24 @@ class _ShopModalState extends State<ShopModal> with TickerProviderStateMixin {
         final String response = await rootBundle.loadString('assets/items/items.json');
         final data = jsonDecode(response) as Map<String, dynamic>;
 
-        setState(() {
-          items = {
-            '벽지': (data['벽지'] as List).map<Map<String, dynamic>>((item) {
-              final isPurchased = purchasedItemIds.contains(item['itemId']);
-              return {
-                ...item,
-                'isPurchased': isPurchased,
-              };
-            }).toList(),
-            '바닥': (data['바닥'] as List).map<Map<String, dynamic>>((item) {
-              final isPurchased = purchasedItemIds.contains(item['itemId']);
-              return {
-                ...item,
-                'isPurchased': isPurchased,
-              };
-            }).toList(),
+        // 3. 서버 데이터와 병합
+        final updatedItems = (data[selectedCategory] as List).map<Map<String, dynamic>>((item) {
+          final isPurchased = purchasedItemIds.contains(item['itemId']);
+          return {
+            ...item,
+            'isPurchased': isPurchased,
           };
+        }).toList();
+
+        // 4. 캐시 업데이트
+        await secureStorage.write(
+          key: 'cachedItems_$selectedCategory',
+          value: jsonEncode(updatedItems),
+        );
+
+        // 5. UI 업데이트를 한 번만 수행
+        setState(() {
+          items[selectedCategory] = updatedItems;
         });
       } else {
         throw Exception('Invalid item data or missing "items" key');
