@@ -50,18 +50,6 @@ class _ShopModalState extends State<ShopModal> with TickerProviderStateMixin {
   Future<void> _loadItemsFromServer() async {
     final petProvider = Provider.of<PetProvider>(context, listen: false);
     try {
-      // 1. 캐시된 데이터 확인
-      final cachedItems = await secureStorage.read(key: 'cachedItems_$selectedCategory');
-      if (cachedItems != null) {
-        final cachedData = jsonDecode(cachedItems) as List<dynamic>;
-        print('cachedData : $cachedData');
-        setState(() {
-          items[selectedCategory] = cachedData.map<Map<String, dynamic>>((item) {
-            return item as Map<String, dynamic>;
-          }).toList();
-        });
-      }
-
       // 2. 서버에서 데이터 가져오기
       final range = selectedCategory == '벽지' ? 1000 : 2000;
       final itemData = await petProvider.fetchItemsByRange(range);
@@ -90,7 +78,7 @@ class _ShopModalState extends State<ShopModal> with TickerProviderStateMixin {
           value: jsonEncode(updatedItems),
         );
 
-        // 5. UI 업데이트
+        // 5. UI 업데이트를 한 번만 수행
         setState(() {
           items[selectedCategory] = updatedItems;
         });

@@ -274,6 +274,7 @@ class HomePage extends StatelessWidget {
                 context: context,
                 isScrollControlled: true, // 모달의 크기 조정 가능
                 backgroundColor: Colors.transparent,
+                barrierColor: Colors.transparent, // 검정 배경 제거
                 shape: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(20.0),
