@@ -9,6 +9,7 @@ import '../home/home_page.dart';
 import '../menu/menu_page.dart';
 import '../../common/widget/custom_bottom_bar.dart';
 import '../../provider/pet_provider.dart'; // PetProvider import
+import '../stats/mobile_initializer.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({Key? key}) : super(key: key);
@@ -19,23 +20,37 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   final initializer = WindowInitializer();
+  final mobileInitializer = DataFetchService();
   int currentIndex = 1; // 기본 선택된 탭: 홈 페이지
   bool isLoading = true; // 로딩 상태
   bool hasError = false; // 에러 상태
+
+  final GlobalKey<DataUsagePageState> _dataUsageKey = GlobalKey<DataUsagePageState>(); // 키 추가
+  final GlobalKey<DisplayUsagePageState> _displayUsageKey = GlobalKey<DisplayUsagePageState>();
+
 
   Widget get statsPage {
     if (Platform.isWindows) {
       return DisplayUsagePage(
         updateDailyUsage: initializer.updateDailyUsage,
         updateHourlyUsage: initializer.updateHourlyUsage,
+        key: _displayUsageKey
       ); // 윈도우용 페이지
     } else if (Platform.isAndroid) {
-      return DataUsagePage(); // 안드로이드용 페이지
+      return DataUsagePage(key: _dataUsageKey); // 안드로이드용 페이지
     } else {
       throw UnsupportedError('현재 플랫폼은 지원되지 않습니다.');
     }
   }
 
+  void _refreshStatsPage() {
+    if (Platform.isAndroid) {
+      _dataUsageKey.currentState?.fetchData(); // _fetchData 호출
+    }
+    else if (Platform.isWindows) {
+      _displayUsageKey.currentState?.refreshData();
+    }
+  }
   late final List<Widget> pages;
 
   @override
@@ -46,7 +61,16 @@ class _MainPageState extends State<MainPage> {
       const HomePage(), // 홈 페이지
       const MenuPage(), // 메뉴 페이지
     ];
+    _initializeData();
     _initializePetData(); // 펫 데이터 초기화
+  }
+
+  Future<void> _initializeData() async {
+    try {
+      await mobileInitializer.fetchAndStoreCarbonFootprint(); // 데이터 처리 및 저장
+    } catch (e) {
+      print('❌ 데이터 초기화 중 오류 발생: $e');
+    }
   }
 
   Future<void> _initializePetData() async {
@@ -112,7 +136,12 @@ class _MainPageState extends State<MainPage> {
         currentIndex: currentIndex,
         onTap: (index) {
           setState(() {
-            currentIndex = index; // 현재 인덱스 업데이트
+            if (index == currentIndex && index == 0) {
+              // 통계 페이지 클릭 시 새로고침
+              _refreshStatsPage();
+            } else {
+              currentIndex = index;
+            }
           });
         },
       ),

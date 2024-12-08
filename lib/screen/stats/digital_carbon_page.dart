@@ -3,22 +3,22 @@ import 'package:flutter/services.dart';
 import 'digital_carbon_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:visibility_detector/visibility_detector.dart';
-
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-
 import 'other_devices_digital_carbon.dart';
+import 'mobile_initializer.dart';
 
 class DataUsagePage extends StatefulWidget {
 
   const DataUsagePage({Key? key}) : super(key: key);
 
   @override
-  _DataUsagePageState createState() => _DataUsagePageState();
+  DataUsagePageState createState() => DataUsagePageState();
 }
 
-class _DataUsagePageState extends State<DataUsagePage>
+class DataUsagePageState extends State<DataUsagePage>
     with SingleTickerProviderStateMixin {
   static const platform = MethodChannel('com.example.datausage/data');
+  final mobileInitializer = DataFetchService();
   final _secureStorage = const FlutterSecureStorage();
 
   Map<String, dynamic> dailyUsageData = {};
@@ -51,7 +51,7 @@ class _DataUsagePageState extends State<DataUsagePage>
       setState(() {});
     });
 
-    _fetchData();
+    fetchData();
   }
 
   // 코틀린으로 값 보내기
@@ -78,9 +78,18 @@ class _DataUsagePageState extends State<DataUsagePage>
     }
   }
 
-  Future<void> _fetchData() async {
+  Future<void> fetchData() async {
     await getDailyDataUsage();
     await getHourlyDataUsage();
+    _initializeData();
+  }
+
+  Future<void> _initializeData() async {
+    try {
+      await mobileInitializer.fetchAndStoreCarbonFootprint(); // 데이터 처리 및 저장
+    } catch (e) {
+      print('❌ 데이터 초기화 중 오류 발생: $e');
+    }
   }
 
   @override
@@ -543,7 +552,7 @@ class _DataUsagePageState extends State<DataUsagePage>
               children: [
                 FloatingActionButton(
                   onPressed: () async {
-                    await _fetchData();
+                    await fetchData();
                   },
                   backgroundColor: Colors.green,
                   mini: true,

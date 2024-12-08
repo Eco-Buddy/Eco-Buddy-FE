@@ -18,10 +18,10 @@ class DisplayUsagePage extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _DisplayUsagePageState createState() => _DisplayUsagePageState();
+  DisplayUsagePageState createState() => DisplayUsagePageState();
 }
 
-class _DisplayUsagePageState extends State<DisplayUsagePage> with SingleTickerProviderStateMixin{
+class DisplayUsagePageState extends State<DisplayUsagePage> with SingleTickerProviderStateMixin{
   double todayWifi = 0.0;
   double todayEthernet = 0.0;
 
@@ -106,6 +106,13 @@ class _DisplayUsagePageState extends State<DisplayUsagePage> with SingleTickerPr
     setState(() {
       hourlyUsageData = parsedHourlyData;
     });
+  }
+
+  Future<void> refreshData() async {
+    await widget.updateDailyUsage(); // Daily usage 업데이트
+    await widget.updateHourlyUsage(); // Hourly usage 업데이트
+    await fetchData(); // 데이터 다시 가져오기
+    print("Data refreshed successfully!");
   }
 
   Future<List<TableRow>> getWeeklyDataRows() async {
@@ -479,11 +486,7 @@ class _DisplayUsagePageState extends State<DisplayUsagePage> with SingleTickerPr
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 FloatingActionButton(
-                  onPressed: () async {
-                    await widget.updateDailyUsage();
-                    await widget.updateHourlyUsage();
-                    await fetchData();
-                  },
+                  onPressed: refreshData,
                   backgroundColor: Colors.green,
                   mini: true,
                   tooltip: 'Refresh Data',
