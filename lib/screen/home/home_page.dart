@@ -8,6 +8,7 @@ import '../../provider/pet_provider.dart';
 import '../shop/shop_modal.dart';
 import '../shop/custom_modal.dart';
 import './mission_dialog.dart';
+import './quest_dialog.dart';
 import 'character_provider.dart';
 
 class HomePage extends StatefulWidget {
@@ -18,6 +19,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  bool _isLoading = true;
   String _backgroundImage = "assets/items/background/background_1.png";
   String _floorImage = "assets/items/floor/floor_1.png";
   String _profileImage = "assets/images/profile/default.png";
@@ -47,6 +49,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _initializeData() async {
+
+    setState(() {
+      _isLoading = true; // Start loading
+    });
+
     try {
       final userData = await _loadUserData();
       _itemsData = await _loadItemsJson();
@@ -68,8 +75,13 @@ class _HomePageState extends State<HomePage> {
         _floorImage = _getItemImageById('바닥', floorId);
         _profileImage = userData['profileImage'] ?? '';
         _userName = userData['userName'] ?? '사용자 이름';
+
+        _isLoading = false; // End loading
       });
     } catch (e) {
+      setState(() {
+        _isLoading = false; // End loading in case of error
+      });
       print('Error initializing data: $e');
     }
   }
@@ -117,6 +129,12 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       body: Stack(
         children: [
+          // If _isLoading is true, show a loading indicator
+          if (_isLoading)
+            Center(
+              child: CircularProgressIndicator(), // Show loading spinner
+            ),
+
           _buildBackground(_backgroundImage),
           _buildFloor(_floorImage),
           _buildCharacter(context),
@@ -194,16 +212,7 @@ class _HomePageState extends State<HomePage> {
           print("Quest Button Clicked");
           showDialog(
             context: context,
-            builder: (context) => AlertDialog(
-              title: const Text("Quest"),
-              content: const Text("퀘스트 관련 내용을 여기에 표시합니다."),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("닫기"),
-                ),
-              ],
-            ),
+            builder: (context) => QuestDialog(), // QuestDialog를 호출
           );
         },
         child: Image.asset(

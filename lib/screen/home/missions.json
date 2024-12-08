@@ -9,7 +9,7 @@
   },
   {
     "id": 2,
-    "image": "assets/images/trash/trash_2.png",
+    "image": "assets/images/trash/trash_1.png",
     "title": "앱 캐시 삭제",
     "request": "앱 캐시 3개 삭제",
     "description": "앱 캐시를 정리하여 저장 공간을 확보하고 디지털 전력을 줄이세요!",
@@ -17,7 +17,7 @@
   },
   {
     "id": 3,
-    "image": "assets/images/trash/trash_3.png",
+    "image": "assets/images/trash/trash_1.png",
     "title": "클라우드 정리",
     "request": "클라우드 데이터 5개 삭제",
     "description": "불필요한 클라우드 데이터를 삭제하여 저장 에너지를 줄이세요.",

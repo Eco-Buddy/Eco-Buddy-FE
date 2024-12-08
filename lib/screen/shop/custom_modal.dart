@@ -178,9 +178,20 @@ class _CustomModalState extends State<CustomModal> with TickerProviderStateMixin
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green, // 버튼 색상
+                      padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 20.0), // Vertical and Horizontal Padding
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20.0), // Rounded corners to match category buttons
+                      ),
                     ),
-                    child: const Text('결정'),
-                  ),
+                    child: const Text(
+                      '결정',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16.0,
+                        color: Colors.white,
+                      ),
+                    ),
+                  )
                 ],
               ),
             ),
