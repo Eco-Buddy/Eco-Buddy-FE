@@ -219,6 +219,7 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:00 /f
     // Case 2: If the date has changed, calculate usage for the previous day(s)
     if (isFirstSaveToday) {
       isAccumulatingToday = false; // 새로운 날이 시작되면 누적 해제
+      await secureStorage.write(key: 'discount', value: '0');
       DateTime lastDate = DateTime.parse(lastSavedDate);
 
       while (lastDate.isBefore(DateTime.now())) {
