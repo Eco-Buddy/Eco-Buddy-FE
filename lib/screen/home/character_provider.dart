@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'character.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class CharacterProvider with ChangeNotifier {
   Character character = Character(
@@ -13,21 +14,53 @@ class CharacterProvider with ChangeNotifier {
   Timer? _walkTimer;
   bool _movingRight = true; // 초기 방향: 오른쪽
   final Random _random = Random();
-
+  final secureStorage = const FlutterSecureStorage(); // Secure Storage 인스턴스
+  String getCurrentEmotion() {
+    return character.emotion;
+  }
   void updateEmotion(String emotion) {
+    // Update character's emotion and stop walking if 'sad'
     character.updateEmotion(emotion);
+    if (emotion == 'sad') {
+      stopWalking();  // Stop walking if sad
+    }
     notifyListeners();
+  }
+
+  Future<void> checkCarbonAndSetEmotion() async {
+    // Secure Storage에서 carbonTotal과 discount를 읽어옴
+    final carbonTotalString = await secureStorage.read(key: 'carbonTotal');
+    final discountString = await secureStorage.read(key: 'discount');
+
+    // 값이 존재하면 파싱하여 계산
+    if (carbonTotalString != null && discountString != null) {
+      final carbonTotal = double.tryParse(carbonTotalString) ?? 0.0;
+      final discount = double.tryParse(discountString) ?? 0.0;
+
+      // 탄소 발생량 계산 (carbonTotal - discount)
+      final result = carbonTotal - discount;
+
+      // 탄소 발생량이 10000보다 크면 'sad', 그렇지 않으면 'normal'
+      if (result > 10000) {
+        updateEmotion('sad');
+        print('탄소 발생량이 10000보다 큽니다. 감정은 sad');
+      } else {
+        updateEmotion('normal');
+        print('탄소 발생량이 10000 이하입니다. 감정은 normal');
+      }
+    }
   }
 
   void startWalking(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     print('Walking started with screenWidth: $screenWidth'); // 디버깅 로그
-
+    checkCarbonAndSetEmotion();
     // 여기서 캐릭터가 처음 시작할 때부터 걷기 시작
     _moveCharacter(screenWidth, steps: 1, speed: 100); // 한번의 작은 걸음으로 시작
 
     _walkTimer?.cancel();
     _walkTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+
       print('Timer triggered');
       _movingRight = _random.nextBool(); // 랜덤으로 이동 방향 설정
       int randomSteps = _random.nextInt(3) + 1; // 1~3 걸음 랜덤 설정

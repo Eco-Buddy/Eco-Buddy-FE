@@ -26,6 +26,7 @@ class _HomePageState extends State<HomePage> {
   String _userName = '사용자 이름';
   late Map<String, dynamic> _itemsData;
   final secureStorage = const FlutterSecureStorage();
+  String _emotionText = ''; // 감정을 저장할 텍스트
 
   @override
   void initState() {
@@ -34,45 +35,10 @@ class _HomePageState extends State<HomePage> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final characterProvider = Provider.of<CharacterProvider>(context, listen: false);
-
       // Secure Storage에서 carbonTotal과 discount를 읽음
-      _loadCarbonData().then((carbonData) async {
-        final carbonTotal = carbonData['carbonTotal'];
-        final discount = carbonData['discount'];
-
-        print(carbonTotal); // 확인용 로그
-
-        // carbonTotal - discount 계산
-        final result = carbonTotal - discount;
-
-        // 결과가 10000보다 크면 'unhappy'로 감정 업데이트
-        if (result > 10000) {
-          characterProvider.updateEmotion('sad');
-          print('sad: $result');
-        } else {
-          characterProvider.updateEmotion('normal');
-          print('normal: $result');
-        }
-      });
-
+      characterProvider.updateEmotion('normal');
       characterProvider.startWalking(context);
     });
-  }
-
-  Future<Map<String, dynamic>> _loadCarbonData() async {
-    try {
-      final carbonTotal = await secureStorage.read(key: 'carbonTotal');
-      final discount = await secureStorage.read(key: 'discount');
-      print(carbonTotal);
-      print(discount);
-      return {
-        'carbonTotal': carbonTotal != null ? int.tryParse(carbonTotal) ?? 0 : 0,
-        'discount': discount != null ? int.tryParse(discount) ?? 0 : 0,
-      };
-    } catch (e) {
-      print('Error loading carbon data: $e');
-      return {'carbonTotal': 0, 'discount': 0};
-    }
   }
 
   Future<List<dynamic>> _loadMissionsJson() async {
@@ -357,15 +323,15 @@ class _HomePageState extends State<HomePage> {
       left: characterProvider.character.position.dx,
       child: GestureDetector(
         onTap: () {
-
+          print('현재 감정: ${characterProvider.getCurrentEmotion()}');
         },
         child: Transform(
           alignment: Alignment.center,
           transform: Matrix4.identity()..scale(characterProvider.character.isFacingRight ? 1.0 : -1.0, 1.0),
           child: Image.asset(
             characterProvider.character.currentImage,
-            width: 160,
-            height: 160,
+            width: 140,
+            height: 140,
           ),
         ),
       ),
