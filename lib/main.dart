@@ -74,7 +74,7 @@ class MyApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) {
         // PetProvider에 SecureStorage 전달
-        final petProvider = PetProvider(secureStorage: secureStorage);
+        final petProvider = PetProvider(secureStorage: secureStorage, context: context);
         _initializePetProvider(petProvider);
         return petProvider;
       },

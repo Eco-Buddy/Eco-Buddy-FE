@@ -146,7 +146,7 @@ class _MainPageState extends State<MainPage> {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => CharacterProvider()), // CharacterProvider 등록
-        ChangeNotifierProvider(create: (_) => PetProvider(secureStorage: secureStorage)), // PetProvider 등록
+        ChangeNotifierProvider(create: (_) => PetProvider(secureStorage: secureStorage, context: context)), // PetProvider 등록
       ],
       child: Scaffold(
         body: IndexedStack(

@@ -11,13 +11,31 @@ class NewbiePage extends StatefulWidget {
 class _NewbiePageState extends State<NewbiePage> {
   final _petNameController = TextEditingController();
   final _secureStorage = FlutterSecureStorage();
+  String? _errorMessage;
+  bool _isNameEntered = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _petNameController.addListener(() {
+      setState(() {
+        _isNameEntered = _petNameController.text.trim().isNotEmpty;
+      });
+    });
+  }
 
   Future<void> _createPet() async {
-    final petName = _petNameController.text;
-
+    final petName = _petNameController.text.trim();
     if (petName.isEmpty) {
-      print('❌ 펫 이름을 입력해주세요.');
+      setState(() {
+        _errorMessage = '펫 이름을 입력해주세요!';
+      });
       return;
+    }
+    else {
+      setState(() {
+        _errorMessage = null;
+      });
     }
 
     // Retrieve access token and other required headers from secure storage
@@ -67,30 +85,71 @@ class _NewbiePageState extends State<NewbiePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('신규 회원 설정')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '환영합니다! 먼저 펫의 이름을 설정해주세요.',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _petNameController,
-              decoration: const InputDecoration(
-                labelText: '펫 이름',
-                border: OutlineInputBorder(),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // 꽃 캐릭터 이미지
+              Image.asset(
+                'assets/images/character/happy.png', // 이미지 파일 경로
+                height: 150,
               ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _createPet,
-              child: const Text('저장하고 시작하기'),
-            ),
-          ],
+              const SizedBox(height: 20),
+              const Text(
+                '환영합니다!\n당신과 함께할 펫의 이름을 정해주세요.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  // 이름 입력 필드
+                  Expanded(
+                    child: TextField(
+                      controller: _petNameController,
+                      decoration: InputDecoration(
+                        hintText: '이름',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFFFFF5E1), // 배경색
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  // 화살표 버튼
+                  ElevatedButton(
+                    onPressed: _createPet,
+                    style: ElevatedButton.styleFrom(
+                      shape: const CircleBorder(),
+                      padding: const EdgeInsets.all(16),
+                      backgroundColor: _isNameEntered
+                          ? const Color(0xFF4CAF50) // 진한 초록색
+                          : const Color(0xFFB6E3A8), // 연한 초록색
+                    ),
+                    child: const Icon(Icons.arrow_forward, color: Colors.white),
+                  ),
+                ],
+              ),
+              // 에러 메시지
+              if (_errorMessage != null) ...[
+                const SizedBox(height: 10),
+                Text(
+                  _errorMessage!,
+                  style: const TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
