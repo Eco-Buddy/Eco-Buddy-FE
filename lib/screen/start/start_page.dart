@@ -145,36 +145,17 @@ class _StartPageState extends State<StartPage> {
 
   @override
   Widget build(BuildContext context) {
+    final backgroundImage = Platform.isAndroid
+        ? 'assets/images/start/start_background2.png' // Android에서는 _2 이미지
+        : 'assets/images/start/start_background.png'; // 다른 플랫폼에서는 기본 이미지
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
         children: [
           Positioned.fill(
             child: Image.asset(
-              'assets/images/start/start_background.png',
+              backgroundImage,
               fit: BoxFit.cover,
-            ),
-          ),
-          Align(
-            alignment: const Alignment(0, -0.5),
-            child: isLoading
-                ? const CircularProgressIndicator()
-                : errorMessage != null
-                ? Text(
-              errorMessage!,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.red,
-              ),
-            )
-                : Text(
-              deviceId ?? 'Unknown Device ID',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
             ),
           ),
           if (!isLoading)

@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
 import 'dart:convert';
-import 'package:flutter/services.dart';
+import 'dart:math';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 class QuestDialog extends StatefulWidget {
   const QuestDialog({Key? key}) : super(key: key);
@@ -10,143 +11,133 @@ class QuestDialog extends StatefulWidget {
 }
 
 class _QuestDialogState extends State<QuestDialog> {
-  late String currentQuestion;
-  late String currentAnswer;
-  TextEditingController _answerController = TextEditingController();
-  String feedbackMessage = "";
-  int earnedPoints = 0;
-  List<dynamic> quests = [];  // 초기값을 빈 리스트로 설정
+  late String _question;
+  late List<String> _hints;
+  late String _answer;
 
-  bool isLoading = true;
   @override
   void initState() {
     super.initState();
-    loadQuests();
+    _loadQuestData();
   }
 
-  // 퀴즈 JSON 파일 로딩
-  Future<void> loadQuests() async {
+  // 퀘스트 데이터를 로드하고 랜덤으로 문제를 선택
+  Future<void> _loadQuestData() async {
     try {
       final String response = await rootBundle.loadString('lib/screen/home/quests.json');
-      final List<dynamic> questsData = jsonDecode(response);
+      final List<dynamic> quests = jsonDecode(response);
+
+      final random = Random();
+      final quest = quests[random.nextInt(quests.length)];
+
       setState(() {
-        quests = questsData;
-        isLoading = false;
+        _question = quest['question'] as String;
+        _answer = quest['answer'] as String;
+        _hints = [
+          quest['hint1'] as String,
+          quest['hint2'] as String,
+          quest['hint3'] as String,
+          quest['hint4'] as String,
+        ].where((hint) => hint.isNotEmpty).toList();
       });
-      if (quests.isNotEmpty) {
-        _loadNextQuestion(); // 데이터가 로드되면 첫 번째 퀴즈를 로드
-      }
     } catch (e) {
-      print('퀘스트 데이터를 불러오는 중 에러 발생: $e');
-      setState(() {
-        isLoading = false;
-      });
+      print("Error loading quest data: $e");
     }
   }
 
-  // 다음 퀴즈로 넘어가기
-  void _loadNextQuestion() {
-    if (quests.isNotEmpty) {
-      final quest = quests[0];
-      setState(() {
-        currentQuestion = quest['question'];
-        currentAnswer = quest['answer'];
-        feedbackMessage = "";
-        earnedPoints = 0;
-        _answerController.clear();
-      });
-    }
-  }
-
-  // 제출 버튼 클릭 시
-  void _submitAnswer() {
-    final userAnswer = _answerController.text.trim();
-    if (userAnswer == currentAnswer) {
-      setState(() {
-        earnedPoints = quests[0]['points'] * 2; // 정답이면 포인트 두 배
-        feedbackMessage = "정답입니다! ${earnedPoints}포인트를 얻었습니다.";
-      });
+  // 정답 확인
+  void _checkAnswer(String selectedAnswer) {
+    if (selectedAnswer == _answer) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('정답!', style: TextStyle(color: Colors.white)),
+          backgroundColor: Colors.green,
+        ),
+      );
     } else {
-      setState(() {
-        earnedPoints = 30; // 틀리면 30포인트
-        feedbackMessage = "아쉽습니다. 정답은 '$currentAnswer'입니다. 30포인트를 드립니다.";
-      });
-    }
-    setState(() {
-      quests.removeAt(0); // 퀴즈 하나를 풀었으니 목록에서 제거
-    });
-    if (quests.isNotEmpty) {
-      _loadNextQuestion(); // 다음 퀴즈 로딩
-    } else {
-      // 퀴즈가 끝났을 때 처리
-      setState(() {
-        feedbackMessage = "모든 퀴즈를 완료했습니다.";
-      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('오답!', style: TextStyle(color: Colors.white)),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-      return Center(child: CircularProgressIndicator());
+    if (_hints.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
     }
-    return AlertDialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
-      title: const Text(
-        "퀘스트",
-        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
-      ),
-      content: quests.isEmpty
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            currentQuestion,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _answerController,
-            decoration: const InputDecoration(
-              labelText: '정답을 입력하세요',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          if (feedbackMessage.isNotEmpty)
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      backgroundColor: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 질문 텍스트
             Text(
-              feedbackMessage,
-              style: TextStyle(
-                fontSize: 14,
-                color: earnedPoints == 0 ? Colors.red : Colors.green,
+              _question,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
               ),
               textAlign: TextAlign.center,
             ),
-        ],
+            const SizedBox(height: 24),
+
+            // 힌트 버튼들
+            ..._hints.map((hint) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14.0),
+                    backgroundColor: Colors.teal, // 버튼 색상
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12), // 둥근 모서리
+                    ),
+                    textStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  onPressed: () => _checkAnswer(hint),
+                  child: Text(hint),
+                ),
+              );
+            }).toList(),
+
+            const SizedBox(height: 24),
+
+            // 닫기 버튼
+            OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Colors.redAccent, width: 2),
+                padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 24.0),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () {
+                Navigator.pop(context); // 다이얼로그 닫기
+              },
+              child: const Text(
+                '닫기',
+                style: TextStyle(
+                  color: Colors.redAccent,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text(
-            '닫기',
-            style: TextStyle(color: Colors.grey),
-          ),
-        ),
-        ElevatedButton(
-          onPressed: _submitAnswer,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
-          ),
-          child: const Text(
-            '제출',
-            style: TextStyle(color: Colors.white),
-          ),
-        ),
-      ],
     );
   }
 }
