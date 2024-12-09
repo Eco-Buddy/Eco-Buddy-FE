@@ -32,17 +32,13 @@ class CharacterProvider with ChangeNotifier {
     // Secure Storage에서 carbonTotal과 discount를 읽어옴
     final carbonTotalString = await secureStorage.read(key: 'carbonTotal');
     final discountString = await secureStorage.read(key: 'discount');
-    print('carbonTotal = $carbonTotalString');
-    print('discount = $discountString');
+    //print('carbonTotal = $carbonTotalString');
+    //print('discount = $discountString');
     // 값이 존재하면 파싱하여 계산
     if (carbonTotalString != null && discountString != null) {
-      final carbonTotal = double.tryParse(carbonTotalString) ?? 0.0;
-      final discount = double.tryParse(discountString) ?? 0.0;
-      print('carbonTotal = $carbonTotalString');
-      print('discount = $discountString');
       // 탄소 발생량 계산 (carbonTotal - discount)
-      final result = int.parse(carbonTotalString) - int.parse(discountString);
-      print('result = $result');
+      final result = double.parse(carbonTotalString) - double.parse(discountString);
+      //print('result = $result');
       // 탄소 발생량이 10000보다 크면 'sad', 그렇지 않으면 'normal'
       if (result > 10000) {
         updateEmotion('sad');
