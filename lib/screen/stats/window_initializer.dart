@@ -101,7 +101,7 @@ class WindowInitializer{
     // ''';
 
     final script = '''
-schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:00 /f
+schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:02 /f
 ''';
 
     try {
@@ -482,7 +482,7 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:00 /f
 
   void scheduleHourlyUpdate() {
     final now = DateTime.now();
-    final nextHour = DateTime(now.year, now.month, now.day, now.hour + 1);
+    final nextHour = DateTime(now.year, now.month, now.day, now.hour + 1).add(Duration(minutes: 2));
     final durationUntilNextHour = nextHour.difference(now);
 
     Timer(durationUntilNextHour, () async {

@@ -32,8 +32,6 @@ class DisplayUsagePageState extends State<DisplayUsagePage> with SingleTickerPro
   late AnimationController _animationController;
   late Animation<double> _animation;
 
-  bool _isChartVisible = false;
-
   @override
   void initState() {
     super.initState();
@@ -44,10 +42,6 @@ class DisplayUsagePageState extends State<DisplayUsagePage> with SingleTickerPro
     );
     _animation =
         Tween<double>(begin: 0.0, end: 1.0).animate(_animationController);
-
-    // _animation.addListener(() {
-    //   setState(() {});
-    // });
 
     fetchData(); // Fetch today's data on initialization
   }
@@ -399,20 +393,22 @@ class DisplayUsagePageState extends State<DisplayUsagePage> with SingleTickerPro
                     } else if (snapshot.hasError) {
                       return Center(child: Text('Error: ${snapshot.error}'));
                     } else {
-                      return Table(
-                        border: TableBorder(
-                          horizontalInside: BorderSide(
-                            color: Colors.grey.shade300,
-                            width: 0.5,
+                      return RepaintBoundary(
+                        child: Table(
+                          border: TableBorder(
+                            horizontalInside: BorderSide(
+                              color: Colors.grey.shade300,
+                              width: 0.5,
+                            ),
                           ),
+                          columnWidths: const {
+                            0: FlexColumnWidth(1.2),
+                            1: FlexColumnWidth(1.2),
+                            2: FlexColumnWidth(1),
+                            3: FlexColumnWidth(1),
+                          },
+                          children: snapshot.data!,
                         ),
-                        columnWidths: const {
-                          0: FlexColumnWidth(1.2), // Date column width
-                          1: FlexColumnWidth(1.2), // Total column width
-                          2: FlexColumnWidth(1), // Sent column width
-                          3: FlexColumnWidth(1), // Received column width
-                        },
-                        children: snapshot.data!,
                       );
                     }
                   },
@@ -439,16 +435,16 @@ class DisplayUsagePageState extends State<DisplayUsagePage> with SingleTickerPro
                 VisibilityDetector(
                   key: const Key('LineChartVisibilityDetector'),
                   onVisibilityChanged: (info) {
-                    if (info.visibleFraction > 0.5 && !_isChartVisible && hourlyUsageData.isNotEmpty) {
-                      setState(() {
-                        _isChartVisible = true;
-                      });
+                    if (info.visibleFraction > 0.5 && !_animationController.isAnimating && hourlyUsageData.isNotEmpty) {
+                      // setState(() {
+                      //   _isChartVisible = true;
+                      // });
                       _animationController.reset();
                       _animationController.forward(from: 0.0);
-                    } else if (info.visibleFraction <= 0.5 && _isChartVisible) {
-                      setState(() {
-                        _isChartVisible = false;
-                      });
+                    } else if (info.visibleFraction <= 0.5 && !_animationController.isAnimating) {
+                      // setState(() {
+                      //   _isChartVisible = false;
+                      // });
                       _animationController.reverse();
                     }
                   },

@@ -52,8 +52,7 @@ Future<void> main(List<String> args) async {
       skipTaskbar: false, // 작업 표시줄에 표시
     );
     windowManager.waitUntilReadyToShow(windowOptions, () async {
-      await windowManager.show();
-      await windowManager.focus();
+      await windowManager.hide();
     });
 
     if (Platform.isWindows) {
