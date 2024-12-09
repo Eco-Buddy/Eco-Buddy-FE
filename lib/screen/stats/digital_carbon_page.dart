@@ -566,12 +566,12 @@ class DataUsagePageState extends State<DataUsagePage>
                           ),
                         ),
                       ],
-                      if (message.isNotEmpty) Text(message),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: resetPreferences,
-                        child: const Text("Reset Preferences"),
-                      ),
+                      // if (message.isNotEmpty) Text(message),
+                      // const SizedBox(height: 20),
+                      // ElevatedButton(
+                      //   onPressed: resetPreferences,
+                      //   child: const Text("Reset Preferences"),
+                      // ),
                     ],
                   ),
           ),
