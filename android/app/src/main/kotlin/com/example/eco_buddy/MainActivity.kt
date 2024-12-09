@@ -166,12 +166,23 @@ class MainActivity : FlutterActivity() {
         val hourlyIntent = Intent(this, DataUsageReceiver::class.java).apply {
             action = "SEND_HOURLY_DATA"
         }
+
+        // Check if alarm is already set
+        val existingPendingIntent = PendingIntent.getBroadcast(
+            this, 1, hourlyIntent, PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        if (existingPendingIntent != null) {
+            Log.d("Alarmcheck", "Alarm already exists. Skipping re-scheduling.")
+            return
+        }
+
         val hourlyPendingIntent = PendingIntent.getBroadcast(
             this, 1, hourlyIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         val hourlyCalendar = Calendar.getInstance().apply {
             if (immediate) {
-                add(Calendar.MINUTE, 5) // Trigger after 1 minute for debugging
+                add(Calendar.MINUTE, 5) // Trigger after 5 minute for debugging
             } else {
                 add(Calendar.HOUR_OF_DAY, 1)
                 set(Calendar.MINUTE, 2)
