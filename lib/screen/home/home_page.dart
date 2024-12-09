@@ -361,10 +361,9 @@ class _HomePageState extends State<HomePage> {
           _buildIconButton(
             'assets/images/icon/shop_icon.png',
             onTap: () {
-
-              showModalBottomSheet(
+              showModalBottomSheet<int>(
                 context: context,
-                isScrollControlled: true, // 모달의 크기 조정 가능
+                isScrollControlled: true,
                 backgroundColor: Colors.transparent,
                 shape: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.only(
@@ -373,16 +372,23 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 builder: (BuildContext context) {
-                  return const ShopModal();
+                  return const ShopModal(); // ShopModal에서 현재 포인트 반환
                 },
-              );
+              ).then((returnedPoints) {
+                // 모달이 닫힌 후 반환된 포인트로 업데이트
+                if (returnedPoints != null) {
+                  setState(() {
+                    userPoints = returnedPoints; // 포인트 갱신
+                  });
+                  print("ShopModal 반환값으로 포인트 업데이트: $returnedPoints");
+                }
+              });
             },
           ),
           const SizedBox(height: 12),
-
           _buildIconButton(
             'assets/images/icon/custom_icon.png',
-            onTap: () async {  // 여기에서 onTap을 async로 변경
+            onTap: () async {
               await showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
@@ -395,7 +401,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 builder: (BuildContext context) {
                   return CustomModal(
-                    onItemsSelected: (backgroundId, floorId) async {  // 이 부분도 async로 변경
+                    onItemsSelected: (backgroundId, floorId) async {
                       print('Selected backgroundId: $backgroundId, floorId: $floorId');
 
                       setState(() {
@@ -408,9 +414,9 @@ class _HomePageState extends State<HomePage> {
                       });
 
                       final petDataString = await secureStorage.read(key: 'petData');
-                      Map<String, dynamic> petData = petDataString != null ? jsonDecode(petDataString) : {};
+                      Map<String, dynamic> petData =
+                      petDataString != null ? jsonDecode(petDataString) : {};
 
-                      // Update the petData with new background and floor
                       petData['background'] = backgroundId;
                       petData['floor'] = floorId;
                       await secureStorage.write(key: 'petData', value: jsonEncode(petData));
@@ -426,6 +432,7 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+
 
   Widget _buildCharacter(BuildContext context) {
     final characterProvider = Provider.of<CharacterProvider>(context);

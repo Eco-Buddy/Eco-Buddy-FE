@@ -341,33 +341,33 @@ class _MenuPageState extends State<MenuPage> {
                       icon: Icons.exit_to_app,
                       title: '로그아웃',
                       subtitle: '계정에서 로그아웃',
-                      onTap: _logout,
+                      onTap: _logout, // 로그아웃만 처리
                     ),
+
+                    // 회원탈퇴 버튼
                     _buildMenuItem(
                       icon: Icons.person_off_rounded,
                       title: '회원탈퇴',
                       subtitle: '모든 정보 삭제',
                       onTap: () {
-                        // 경고 창 띄우기
+                        // 회원탈퇴 다이얼로그
                         showDialog(
                           context: context,
                           builder: (BuildContext context) {
                             return AlertDialog(
                               title: Text("회원탈퇴"),
-                              content: Text("다른 기기까지 포함한 모든 정보가 삭제됩니다. 정말로 탈퇴하시겠습니까?"),
+                              content: Text("모든 정보가 삭제됩니다. 정말 탈퇴하시겠습니까?"),
                               actions: [
                                 TextButton(
                                   onPressed: () {
-                                    // 취소 버튼 클릭 시
                                     Navigator.of(context).pop(); // 다이얼로그 닫기
                                   },
                                   child: Text("취소"),
                                 ),
                                 ElevatedButton(
                                   onPressed: () {
-                                    // 확인 버튼 클릭 시
                                     Navigator.of(context).pop(); // 다이얼로그 닫기
-                                    _withdraw(); // 함수 실행
+                                    _withdraw(); // 회원 탈퇴 실행
                                   },
                                   child: Text("확인"),
                                 ),
