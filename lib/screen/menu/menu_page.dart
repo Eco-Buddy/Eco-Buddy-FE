@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // Secure storage
 import '../../provider/pet_provider.dart';  // 예시
 import 'package:provider/provider.dart';
+import 'tip_page.dart';
 
 class MenuPage extends StatefulWidget {
   const MenuPage({Key? key}) : super(key: key);
@@ -244,10 +245,18 @@ class _MenuPageState extends State<MenuPage> {
                       title: '환경 꿀팁',
                       subtitle: '환경을 지키는 유용한 팁들',
                       onTap: () {
-                        final petProvider = Provider.of<PetProvider>(context, listen: false); // Provider 사용
-                        petProvider.printAllSecureStorage();
-                        // 환경 꿀팁 페이지로 이동
-                        print('환경 꿀팁 클릭됨');
+                        // final petProvider = Provider.of<PetProvider>(context, listen: false); // Provider 사용
+                        // petProvider.printAllSecureStorage();
+                        // // 환경 꿀팁 페이지로 이동
+                        // print('환경 꿀팁 클릭됨');
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true, // 화면 전체 사용 가능
+                          builder: (context) => SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.9, // 높이 설정
+                            child: DigitalCarbonFootprintTips(),
+                          ),
+                        );
                       },
                     ),
                   ],

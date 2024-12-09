@@ -47,6 +47,7 @@ flutter:
     - assets/images/icon/
     - assets/images/profile/
     - assets/images/start/
+    - assets/images/tip/
     - assets/images/trash/
     - assets/images/alert/
     - assets/items/items.json
@@ -57,3 +58,4 @@ flutter:
     - lib/screen/home/missions.json
     - assets/images/profile/default.png
     - lib/screen/home/
+    - lib/screen/menu/tips.json
