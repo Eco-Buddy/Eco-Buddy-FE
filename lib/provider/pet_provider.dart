@@ -116,17 +116,23 @@ class PetProvider with ChangeNotifier {
   }
 
   Future<void> deleteExceptSpecificKeys() async {
-    final secureStorage = const FlutterSecureStorage();
-
-    // 키 목록을 가져온 후 필요한 항목만 삭제
-    final keysToDelete = await secureStorage.readAll();
-
-    // 'carbonTotal'과 'discount'를 제외한 모든 키 삭제
-    keysToDelete.forEach((key, value) {
-      if (key != 'carbonTotal' && key != 'discount') {
-        secureStorage.delete(key: key);
+    final FlutterSecureStorage secureStorage = FlutterSecureStorage();
+    try {
+      // 모든 키-값 쌍을 가져옵니다.
+      Map<String, String> allData = await secureStorage.readAll();
+      // 제외할 키 목록
+      List<String> keysToKeep = ['carbonTotal', 'discount'];
+      // 제외할 키 목록에 포함되지 않는 항목들을 삭제
+      for (var key in allData.keys) {
+        if (!keysToKeep.contains(key)) {
+          await secureStorage.delete(key: key);
+          print('삭제된 키: $key');
+        }
       }
-    });
+      print("특정 키를 제외한 모든 데이터를 삭제했습니다.");
+    } catch (e) {
+      print("데이터 삭제 중 오류 발생: $e");
+    }
   }
 
   Future<int> getCurrentBackgroundId() async {

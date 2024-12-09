@@ -48,6 +48,15 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  Future<void> _updatePetPoints(int newPoints) async {
+    final petProvider = Provider.of<PetProvider>(context, listen: false);
+
+    // petPoints 값 업데이트
+    await petProvider.updatePetPoints(newPoints);
+
+    print("포인트 변경됨: $newPoints");
+  }
+
   Future<void> _checkCharacterEmotion() async {
     if (_characterProvider.getCurrentEmotion() == 'sad') {
       // 감정이 sad일 때 다이얼로그 띄우기
@@ -507,27 +516,31 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildTokenInfo(int points) {
-    return Container(
-      decoration: _buildInfoBoxDecoration(),
-      padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: Colors.transparent,
-            backgroundImage: const AssetImage('assets/images/icon/leaf_token.png'),
+    return Consumer<PetProvider>(
+        builder: (context, petProvider, child) {
+        return Container(
+          decoration: _buildInfoBoxDecoration(),
+          padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: Colors.transparent,
+                backgroundImage: const AssetImage('assets/images/icon/leaf_token.png'),
+              ),
+              const SizedBox(width: 8.0),
+              Text(
+                points.toString(),
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8.0),
-          Text(
-            points.toString(),
-            style: const TextStyle(
-              color: Colors.black,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
