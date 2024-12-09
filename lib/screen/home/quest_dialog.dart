@@ -1,143 +1,180 @@
 import 'dart:convert';
 import 'dart:math';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:provider/provider.dart';
+import 'package:flutter/services.dart';
+import '../../provider/pet_provider.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class QuestDialog extends StatefulWidget {
-  const QuestDialog({Key? key}) : super(key: key);
-
   @override
   _QuestDialogState createState() => _QuestDialogState();
 }
 
 class _QuestDialogState extends State<QuestDialog> {
-  late String _question;
-  late List<String> _hints;
-  late String _answer;
+  Map<String, dynamic>? _currentQuest;
+  bool _showResult = false;
+  bool _isCorrect = false;
+  final FlutterSecureStorage _storage = FlutterSecureStorage();
 
   @override
   void initState() {
     super.initState();
-    _loadQuestData();
+    _loadRandomQuest();
   }
 
-  // 퀘스트 데이터를 로드하고 랜덤으로 문제를 선택
-  Future<void> _loadQuestData() async {
+  Future<void> _loadRandomQuest() async {
     try {
-      final String response = await rootBundle.loadString('lib/screen/home/quests.json');
-      final List<dynamic> quests = jsonDecode(response);
-
+      final String data = await rootBundle.loadString('lib/screen/home/quests.json');
+      final List<dynamic> quests = json.decode(data);
       final random = Random();
-      final quest = quests[random.nextInt(quests.length)];
-
       setState(() {
-        _question = quest['question'] as String;
-        _answer = quest['answer'] as String;
-        _hints = [
-          quest['hint1'] as String,
-          quest['hint2'] as String,
-          quest['hint3'] as String,
-          quest['hint4'] as String,
-        ].where((hint) => hint.isNotEmpty).toList();
+        _currentQuest = quests[random.nextInt(quests.length)];
       });
     } catch (e) {
-      print("Error loading quest data: $e");
+      print('Error loading quests.json: $e');
     }
   }
 
-  // 정답 확인
-  void _checkAnswer(String selectedAnswer) {
-    if (selectedAnswer == _answer) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('정답!', style: TextStyle(color: Colors.white)),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('오답!', style: TextStyle(color: Colors.white)),
-          backgroundColor: Colors.red,
-        ),
-      );
+  Future<void> _updatePointsInStorage(int newPoints) async {
+    await _storage.write(key: 'points', value: newPoints.toString());
+  }
+
+  void _checkAnswer(String selectedHint) {
+    if (_currentQuest != null) {
+      setState(() {
+        _isCorrect = selectedHint == _currentQuest!['answer'];
+        _showResult = true;
+
+        // 포인트 갱신
+        final petProvider = Provider.of<PetProvider>(context, listen: false);
+        final int reward = _isCorrect ? 1000 : 100;
+        final int updatedPoints = petProvider.petPoints + reward;
+        petProvider.updatePetPoints(updatedPoints);
+
+        // Secure Storage에 포인트 저장
+        _updatePointsInStorage(updatedPoints);
+
+        print(_isCorrect
+            ? '정답입니다! +1000 포인트'
+            : '오답입니다... +100 포인트');
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_hints.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      backgroundColor: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // 질문 텍스트
-            Text(
-              _question,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: _currentQuest == null
+          ? Center(child: CircularProgressIndicator())
+          : !_showResult
+          ? Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16.0),
+            color: Colors.green,
+            child: Center(
+              child: Text(
+                'Quiz',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              _currentQuest!['question'],
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.black,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
-
-            // 힌트 버튼들
-            ..._hints.map((hint) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14.0),
-                    backgroundColor: Colors.teal, // 버튼 색상
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12), // 둥근 모서리
-                    ),
-                    textStyle: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  onPressed: () => _checkAnswer(hint),
-                  child: Text(hint),
-                ),
-              );
-            }).toList(),
-
-            const SizedBox(height: 24),
-
-            // 닫기 버튼
-            OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.redAccent, width: 2),
-                padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 24.0),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+          ),
+          ...List.generate(4, (index) {
+            String hintKey = 'hint${index + 1}';
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 16.0),
+              child: ElevatedButton(
+                onPressed: () => _checkAnswer(_currentQuest![hintKey]),
+                child: Text(_currentQuest![hintKey]),
               ),
-              onPressed: () {
-                Navigator.pop(context); // 다이얼로그 닫기
-              },
-              child: const Text(
-                '닫기',
-                style: TextStyle(
-                  color: Colors.redAccent,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+            );
+          }),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _refreshPoints();
+            },
+            child: Text(
+              '닫기',
+              style: TextStyle(color: Colors.red),
+            ),
+          )
+        ],
+      )
+          : Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              _isCorrect ? '정답입니다!' : '오답입니다...',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: _isCorrect ? Colors.green : Colors.red,
               ),
             ),
-          ],
-        ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              _currentQuest!['explanation'],
+              style: TextStyle(fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          Text(
+            _isCorrect ? '+1000 포인트' : '+100 포인트',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: _isCorrect ? Colors.green : Colors.grey,
+            ),
+          ),
+          Text(
+            _isCorrect ? '' : '다음번엔 꼭 맞춰봐요!',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey,
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _refreshPoints();
+            },
+            child: Text('확인'),
+          )
+        ],
       ),
     );
+  }
+
+  Future<void> _refreshPoints() async {
+    final String? points = await _storage.read(key: 'points');
+    if (points != null) {
+      final petProvider = Provider.of<PetProvider>(context, listen: false);
+      petProvider.updatePetPoints(int.parse(points));
+      print('포인트 갱신됨: $points');
+    }
   }
 }

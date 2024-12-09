@@ -102,107 +102,118 @@ class _CustomModalState extends State<CustomModal> with TickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        height: 220,
-        width: MediaQuery.of(context).size.width, // 가로를 화면 전체로 설정
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20.0),
-            topRight: Radius.circular(20.0),
+    return WillPopScope(
+      onWillPop: () async {
+        // 모달이 닫힐 때 선택된 데이터 반환 및 로그 출력
+        print('Closing modal with selection: backgroundId=$selectedBackgroundId, floorId=$selectedFloorId');
+        Navigator.pop(context, {
+          'backgroundId': selectedBackgroundId,
+          'floorId': selectedFloorId,
+        });
+        return true;
+      },
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          height: 220,
+          width: MediaQuery.of(context).size.width, // 가로를 화면 전체로 설정
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20.0),
+              topRight: Radius.circular(20.0),
+            ),
           ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: ['벽지', '바닥'].map((category) {
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            selectedCategory = category;
-                          });
-                          _loadItemsFromServer(); // 카테고리 변경 시 서버에서 재로드
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 12.0,
-                            horizontal: 20.0,
-                          ),
-                          margin: const EdgeInsets.symmetric(horizontal: 8.0),
-                          decoration: BoxDecoration(
-                            color: selectedCategory == category
-                                ? Colors.green[400]
-                                : Colors.grey[300],
-                            borderRadius: BorderRadius.circular(20.0),
-                          ),
-                          child: Text(
-                            category,
-                            style: TextStyle(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: ['벽지', '바닥'].map((category) {
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              selectedCategory = category;
+                            });
+                            _loadItemsFromServer(); // 카테고리 변경 시 서버에서 재로드
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 12.0,
+                              horizontal: 20.0,
+                            ),
+                            margin: const EdgeInsets.symmetric(horizontal: 8.0),
+                            decoration: BoxDecoration(
                               color: selectedCategory == category
-                                  ? Colors.white
-                                  : Colors.black,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16.0,
+                                  ? Colors.green[400]
+                                  : Colors.grey[300],
+                              borderRadius: BorderRadius.circular(20.0),
+                            ),
+                            child: Text(
+                              category,
+                              style: TextStyle(
+                                color: selectedCategory == category
+                                    ? Colors.white
+                                    : Colors.black,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16.0,
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  ElevatedButton(
-                    onPressed: () async {
-                      if (selectedBackgroundId == null || selectedFloorId == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('아이템을 선택하세요.')),
                         );
-                        return;
-                      }
-                      print('Final selection: backgroundId: $selectedBackgroundId, floorId: $selectedFloorId');
+                      }).toList(),
+                    ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        if (selectedBackgroundId == null || selectedFloorId == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('아이템을 선택하세요.')),
+                          );
+                          return;
+                        }
+                        print('Final selection: backgroundId: $selectedBackgroundId, floorId: $selectedFloorId');
 
-                      // PetProvider를 통해 서버로 데이터 전달
-                      final petProvider = Provider.of<PetProvider>(context, listen: false);
-                      await petProvider.updateBackgroundAndFloor(selectedBackgroundId!, selectedFloorId!);
-                      Navigator.pop(context, {
-                        'backgroundId': selectedBackgroundId,
-                        'floorId': selectedFloorId,
-                      });
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green, // 버튼 색상
-                      padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 20.0), // Vertical and Horizontal Padding
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20.0), // Rounded corners to match category buttons
+                        // PetProvider를 통해 서버로 데이터 전달
+                        final petProvider = Provider.of<PetProvider>(context, listen: false);
+                        await petProvider.updateBackgroundAndFloor(selectedBackgroundId!, selectedFloorId!);
+                        Navigator.pop(context, {
+                          'backgroundId': selectedBackgroundId,
+                          'floorId': selectedFloorId,
+                        });
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green, // 버튼 색상
+                        padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 20.0), // Vertical and Horizontal Padding
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20.0), // Rounded corners to match category buttons
+                        ),
                       ),
-                    ),
-                    child: const Text(
-                      '결정',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16.0,
-                        color: Colors.white,
+                      child: const Text(
+                        '결정',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16.0,
+                          color: Colors.white,
+                        ),
                       ),
-                    ),
-                  )
-                ],
+                    )
+                  ],
+                ),
               ),
-            ),
-            Expanded(
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                children: items[selectedCategory]?.map((item) => _buildItemCard(item)).toList() ?? [],
+              Expanded(
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  children: items[selectedCategory]?.map((item) => _buildItemCard(item)).toList() ?? [],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
