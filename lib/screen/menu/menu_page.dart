@@ -29,6 +29,11 @@ class _MenuPageState extends State<MenuPage> {
     _initializeWebView();
   }
 
+  bool _containsSpecialCharacters(String input) {
+    final RegExp specialCharRegex = RegExp(r'[!@#\$%^&*(),.?":{}|<>]');
+    return specialCharRegex.hasMatch(input);
+  }
+
   Future<void> _initializeWebView() async {
     if (Platform.isAndroid) {
       _androidWebViewController = WebViewController()
@@ -114,7 +119,19 @@ class _MenuPageState extends State<MenuPage> {
       ),
     );
 
-    if (newPetName?.isNotEmpty ?? false) {
+    newPetName = newPetName?.trim();
+
+    if(newPetName!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('펫 이름을 비워둘 수는 없습니다!')),
+      );
+    }
+    else if (_containsSpecialCharacters(newPetName)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('특수 문자는 사용할 수 없습니다!')),
+      );
+    }
+    else {
       print('새로운 펫 이름: $newPetName');
       // 펫 이름을 업데이트하는 메서드 호출
       await Provider.of<PetProvider>(context, listen: false).updatePetName(newPetName!);
