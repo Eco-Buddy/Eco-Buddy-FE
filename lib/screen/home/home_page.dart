@@ -164,7 +164,7 @@ class _HomePageState extends State<HomePage> {
   Widget _buildTrash(BuildContext context) {
     final petProvider = Provider.of<PetProvider>(context);
     return Positioned(
-      bottom: 150,
+      bottom: 120,
       left: MediaQueryData.fromWindow(WidgetsBinding.instance.window).size.width / 3,
       child: GestureDetector(
         onTap: () async {
@@ -252,7 +252,7 @@ class _HomePageState extends State<HomePage> {
       child: Image.asset(
         floorImage,
         fit: BoxFit.cover,
-        height: 150,
+        height: 130,
       ),
     );
   }
@@ -287,8 +287,8 @@ class _HomePageState extends State<HomePage> {
 
           _buildIconButton(
             'assets/images/icon/custom_icon.png',
-            onTap: () {
-              showModalBottomSheet(
+            onTap: () async {  // 여기에서 onTap을 async로 변경
+              await showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
@@ -300,7 +300,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 builder: (BuildContext context) {
                   return CustomModal(
-                    onItemsSelected: (backgroundId, floorId) {
+                    onItemsSelected: (backgroundId, floorId) async {  // 이 부분도 async로 변경
                       print('Selected backgroundId: $backgroundId, floorId: $floorId');
 
                       setState(() {
@@ -311,6 +311,16 @@ class _HomePageState extends State<HomePage> {
                           _floorImage = _getItemImageById('바닥', floorId);
                         }
                       });
+
+                      final petDataString = await secureStorage.read(key: 'petData');
+                      Map<String, dynamic> petData = petDataString != null ? jsonDecode(petDataString) : {};
+
+                      // Update the petData with new background and floor
+                      petData['background'] = backgroundId;
+                      petData['floor'] = floorId;
+                      await secureStorage.write(key: 'petData', value: jsonEncode(petData));
+
+                      print('Updated petData: $petData');
                     },
                   );
                 },
@@ -327,7 +337,7 @@ class _HomePageState extends State<HomePage> {
 
     return AnimatedPositioned(
       duration: const Duration(milliseconds: 500),
-      bottom: 140, // 바닥 이미지 위
+      bottom: 120, // 바닥 이미지 위
       left: characterProvider.character.position.dx,
       child: GestureDetector(
         onTap: () {

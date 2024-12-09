@@ -48,6 +48,7 @@ flutter:
     - assets/images/profile/
     - assets/images/start/
     - assets/images/trash/
+    - assets/images/alert/
     - assets/items/items.json
     - assets/design1.png
     - assets/digital_CO2.png
