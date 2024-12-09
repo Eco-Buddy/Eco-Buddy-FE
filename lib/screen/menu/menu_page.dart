@@ -96,12 +96,13 @@ class _MenuPageState extends State<MenuPage> {
     try {
       final provider = await _secureStorage.read(key: 'provider');
       final accessToken = await _secureStorage.read(key: 'accessToken');
+      final deviceId = await _secureStorage.read(key: 'deviceId');
 
       if (provider != null && accessToken != null) {
         final response = await http.post(
           Uri.parse('http://223.130.162.100:4525/$provider/logout'),
           headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'access_token': accessToken}),
+          body: jsonEncode({'access_token': accessToken, 'deviceId': deviceId}),
         );
 
         if (response.statusCode == 200) {
