@@ -137,6 +137,52 @@ class _MenuPageState extends State<MenuPage> {
     }
   }
 
+  Future<void> _withdraw() async {
+    try {
+      final provider = await _secureStorage.read(key: 'provider');
+      final accessToken = await _secureStorage.read(key: 'accessToken');
+      final userId = await _secureStorage.read(key: 'userId');
+
+      if (provider != null && accessToken != null) {
+        final response = await http.post(
+          Uri.parse('http://223.130.162.100:4525/$provider/withdraw'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'access_token': accessToken, 'userId': userId}),
+        );
+
+        if (response.statusCode == 200) {
+          print('✅ 회원탈퇴 성공');
+        } else {
+          print('❌ 회원탈퇴 실패: ${response.statusCode}');
+        }
+      }
+
+      deleteExceptSpecificKeys();
+      print('🔑 Secure storage cleared.');
+      printAllSecureStorage();
+      if (Platform.isAndroid && _androidWebViewController != null) {
+        await _androidWebViewController!.clearCache();
+        print('✅ Android WebView cache cleared.');
+
+        final cookieManager = WebViewCookieManager();
+        final cookiesCleared = await cookieManager.clearCookies();
+        if (cookiesCleared) {
+          print('✅ Android WebView cookies cleared.');
+        } else {
+          print('⚠️ No cookies to clear.');
+        }
+      } else if (Platform.isWindows && _windowsWebViewController != null && _isInitialized) {
+        await _windowsWebViewController!.clearCache();
+        await _windowsWebViewController!.clearCookies();
+        print('✅ Windows WebView cookies and cache cleared.');
+      }
+
+      Navigator.pushReplacementNamed(context, '/start');
+    } catch (e) {
+      print('❌ 회원탈퇴 처리 중 오류 발생: $e');
+    }
+  }
+
   // MenuPage에서 펫 이름 수정하기
   Future<void> _editPetName(BuildContext context) async {
     // TextEditingController 사용
@@ -296,6 +342,40 @@ class _MenuPageState extends State<MenuPage> {
                       title: '로그아웃',
                       subtitle: '계정에서 로그아웃',
                       onTap: _logout,
+                    ),
+                    _buildMenuItem(
+                      icon: Icons.person_off_rounded,
+                      title: '회원탈퇴',
+                      subtitle: '모든 정보 삭제',
+                      onTap: () {
+                        // 경고 창 띄우기
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: Text("회원탈퇴"),
+                              content: Text("다른 기기까지 포함한 모든 정보가 삭제됩니다. 정말로 탈퇴하시겠습니까?"),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    // 취소 버튼 클릭 시
+                                    Navigator.of(context).pop(); // 다이얼로그 닫기
+                                  },
+                                  child: Text("취소"),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    // 확인 버튼 클릭 시
+                                    Navigator.of(context).pop(); // 다이얼로그 닫기
+                                    _withdraw(); // 함수 실행
+                                  },
+                                  child: Text("확인"),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      },
                     ),
                   ],
                 ),
