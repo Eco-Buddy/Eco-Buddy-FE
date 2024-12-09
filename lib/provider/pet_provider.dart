@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
@@ -57,10 +58,11 @@ class Pet {
 
 class PetProvider with ChangeNotifier {
   final FlutterSecureStorage secureStorage;
+  final BuildContext context;
   bool isInitialized = false;
   late Pet _pet;
 
-  PetProvider({required this.secureStorage}) {
+  PetProvider({required this.secureStorage, required this.context}) {
     // 기본값 설정
     _pet = Pet(
       petName: 'Default Pet',
@@ -80,6 +82,34 @@ class PetProvider with ChangeNotifier {
   void setPet(Pet pet) {
     _pet = pet;
     notifyListeners();
+  }
+
+  Future<void> handleUnauthorizedError() async {
+    // 알림 창 띄우기
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('로그인 세션 만료'),
+          content: const Text('로그인 세션이 만료되어 시작 화면으로 돌아갑니다.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // 알림 창 닫기
+              },
+              child: const Text('확인'),
+            ),
+          ],
+        );
+      },
+    );
+
+    // Secure Storage 초기화
+    await secureStorage.deleteAll();
+    print('✅ Secure Storage 초기화 완료');
+
+    // StartPage로 이동
+    Navigator.pushReplacementNamed(context, '/start');
   }
 
   Future<int> getCurrentBackgroundId() async {
@@ -149,6 +179,10 @@ class PetProvider with ChangeNotifier {
         print("✅ 펫 데이터 로드 성공 및 저장 완료");
         print('🐾 Loaded pet data: $_pet');
 
+      }
+      else if (response.statusCode == 401) {
+        // 인증 오류 발생 시 처리
+        await handleUnauthorizedError();
       } else {
         print('❌ 펫 데이터 로드 실패: ${response.statusCode}');
       }
@@ -212,6 +246,10 @@ class PetProvider with ChangeNotifier {
         _pet.points = newPoints;
         notifyListeners(); // UI 업데이트
         print('✅ 포인트 서버 동기화 및 업데이트 성공');
+      }
+      else if (response.statusCode == 401) {
+        // 인증 오류 발생 시 처리
+        await handleUnauthorizedError();
       } else {
         print('❌ 포인트 서버 업데이트 실패: ${response.statusCode}');
         print('❌ 응답 내용: ${response.body}');
@@ -262,7 +300,11 @@ class PetProvider with ChangeNotifier {
         _pet.petName = newPetName;
         notifyListeners(); // UI 업데이트
         print('✅ 펫 이름 서버 동기화 및 업데이트 성공');
-      } else {
+      }
+      else if (response.statusCode == 401) {
+        // 인증 오류 발생 시 처리
+        await handleUnauthorizedError();
+      }  else {
         print('❌ 펫 이름 서버 업데이트 실패: ${response.statusCode}');
         print('❌ 응답 내용: ${response.body}');
       }
@@ -279,6 +321,7 @@ class PetProvider with ChangeNotifier {
       allData.forEach((key, value) {
         print('Key: $key, Value: $value');
       });
+      await handleUnauthorizedError();
     } catch (e) {
       print('❌ Secure Storage 데이터를 출력하는 중 오류 발생: $e');
     }
@@ -306,6 +349,10 @@ class PetProvider with ChangeNotifier {
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
         return responseData;
+      } else if (response.statusCode == 401) {
+        // 인증 오류 발생 시 처리
+        await handleUnauthorizedError(); // 비동기 함수 처리
+        return {}; // 인증 오류가 발생했을 때 빈 맵 반환
       } else {
         throw Exception('Failed to fetch items. Status code: ${response.statusCode}');
       }
@@ -313,6 +360,7 @@ class PetProvider with ChangeNotifier {
       throw Exception('Error fetching items: $e');
     }
   }
+
 
   Future<bool> purchaseItem(int itemId) async {
     final accessToken = await secureStorage.read(key: 'accessToken') ?? '';
@@ -333,7 +381,11 @@ class PetProvider with ChangeNotifier {
         },
       );
 
-      return response.statusCode == 200;
+    if (response.statusCode == 401) {
+    // 인증 오류 발생 시 처리
+      await handleUnauthorizedError();
+    }
+    return response.statusCode == 200;
     } catch (e) {
       return false;
     }
