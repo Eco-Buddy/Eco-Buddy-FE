@@ -108,11 +108,25 @@ class PetProvider with ChangeNotifier {
     );
 
     // Secure Storage 초기화
-    await secureStorage.deleteAll();
+    await deleteExceptSpecificKeys();
     print('✅ Secure Storage 초기화 완료');
 
     // StartPage로 이동
     Navigator.pushReplacementNamed(context, '/start');
+  }
+
+  Future<void> deleteExceptSpecificKeys() async {
+    final secureStorage = const FlutterSecureStorage();
+
+    // 키 목록을 가져온 후 필요한 항목만 삭제
+    final keysToDelete = await secureStorage.readAll();
+
+    // 'carbonTotal'과 'discount'를 제외한 모든 키 삭제
+    keysToDelete.forEach((key, value) {
+      if (key != 'carbonTotal' && key != 'discount') {
+        secureStorage.delete(key: key);
+      }
+    });
   }
 
   Future<int> getCurrentBackgroundId() async {
@@ -395,7 +409,7 @@ class PetProvider with ChangeNotifier {
       allData.forEach((key, value) {
         print('Key: $key, Value: $value');
       });
-      await handleUnauthorizedError();
+      //await handleUnauthorizedError();
     } catch (e) {
       print('❌ Secure Storage 데이터를 출력하는 중 오류 발생: $e');
     }

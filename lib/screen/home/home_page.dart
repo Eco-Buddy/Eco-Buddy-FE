@@ -425,8 +425,8 @@ class _HomePageState extends State<HomePage> {
       left: characterProvider.character.position.dx,
       child: GestureDetector(
         onTap: () {
-          print(
-              '현재 감정: ${characterProvider.getCurrentEmotion()}'); // 클릭 시 로그 확인
+          print('현재 감정: ${characterProvider.getCurrentEmotion()}'); // 클릭 시 로그 확인
+          characterProvider.checkCarbonAndSetEmotion();
           if (characterProvider.getCurrentEmotion() == 'sad') {
             showDialog(
               context: context,

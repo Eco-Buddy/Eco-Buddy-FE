@@ -16,6 +16,7 @@ class CharacterProvider with ChangeNotifier {
   final Random _random = Random();
   final secureStorage = const FlutterSecureStorage(); // Secure Storage 인스턴스
   String getCurrentEmotion() {
+
     return character.emotion;
   }
   void updateEmotion(String emotion) {
@@ -31,15 +32,17 @@ class CharacterProvider with ChangeNotifier {
     // Secure Storage에서 carbonTotal과 discount를 읽어옴
     final carbonTotalString = await secureStorage.read(key: 'carbonTotal');
     final discountString = await secureStorage.read(key: 'discount');
-
+    print('carbonTotal = $carbonTotalString');
+    print('discount = $discountString');
     // 값이 존재하면 파싱하여 계산
     if (carbonTotalString != null && discountString != null) {
       final carbonTotal = double.tryParse(carbonTotalString) ?? 0.0;
       final discount = double.tryParse(discountString) ?? 0.0;
-
+      print('carbonTotal = $carbonTotalString');
+      print('discount = $discountString');
       // 탄소 발생량 계산 (carbonTotal - discount)
-      final result = carbonTotal - discount;
-      print(result);
+      final result = int.parse(carbonTotalString) - int.parse(discountString);
+      print('result = $result');
       // 탄소 발생량이 10000보다 크면 'sad', 그렇지 않으면 'normal'
       if (result > 10000) {
         updateEmotion('sad');
@@ -49,12 +52,14 @@ class CharacterProvider with ChangeNotifier {
         print('탄소 발생량이 10000 이하입니다. 감정은 normal');
       }
     }
+    else{
+      print('응 없어');
+    }
   }
 
   void startWalking(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     print('Walking started with screenWidth: $screenWidth'); // 디버깅 로그
-    checkCarbonAndSetEmotion();
     // 여기서 캐릭터가 처음 시작할 때부터 걷기 시작
     _moveCharacter(screenWidth, steps: 1, speed: 100); // 한번의 작은 걸음으로 시작
 
@@ -62,6 +67,7 @@ class CharacterProvider with ChangeNotifier {
     _walkTimer = Timer.periodic(const Duration(seconds: 3), (_) {
 
       print('Timer triggered');
+      checkCarbonAndSetEmotion();
       _movingRight = _random.nextBool(); // 랜덤으로 이동 방향 설정
       int randomSteps = _random.nextInt(3) + 1; // 1~3 걸음 랜덤 설정
       double randomSpeed = _random.nextDouble() * 100 + 50; // 50~150ms 랜덤 속도 설정
