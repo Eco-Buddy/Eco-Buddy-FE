@@ -47,13 +47,11 @@ class _QuestDialogState extends State<QuestDialog> {
         _isCorrect = selectedHint == _currentQuest!['answer'];
         _showResult = true;
 
-        // 포인트 갱신
         final petProvider = Provider.of<PetProvider>(context, listen: false);
         final int reward = _isCorrect ? 1000 : 100;
         final int updatedPoints = petProvider.petPoints + reward;
         petProvider.updatePetPoints(updatedPoints);
 
-        // Secure Storage에 포인트 저장
         _updatePointsInStorage(updatedPoints);
 
         print(_isCorrect
@@ -66,108 +64,143 @@ class _QuestDialogState extends State<QuestDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(16),
+          topRight: Radius.circular(16),
+          bottomLeft: Radius.circular(16),
+          bottomRight: Radius.circular(16),
+        ),
+      ),
       child: _currentQuest == null
           ? Center(child: CircularProgressIndicator())
           : !_showResult
-          ? Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16.0),
+          ? _buildQuestionContent()
+          : _buildResultContent(),
+    );
+  }
+
+  Widget _buildQuestionContent() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16.0),
+          decoration: BoxDecoration(
             color: Colors.green,
-            child: Center(
-              child: Text(
-                'Quiz',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(16),
+              topRight: Radius.circular(16),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
+          child: Center(
             child: Text(
-              _currentQuest!['question'],
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.black,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          ...List.generate(4, (index) {
-            String hintKey = 'hint${index + 1}';
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 16.0),
-              child: ElevatedButton(
-                onPressed: () => _checkAnswer(_currentQuest![hintKey]),
-                child: Text(_currentQuest![hintKey]),
-              ),
-            );
-          }),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _refreshPoints();
-            },
-            child: Text(
-              '닫기',
-              style: TextStyle(color: Colors.red),
-            ),
-          )
-        ],
-      )
-          : Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              _isCorrect ? '정답입니다!' : '오답입니다...',
+              'Quiz',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: _isCorrect ? Colors.green : Colors.red,
+                color: Colors.white,
               ),
             ),
           ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            _currentQuest!['question'],
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.black,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        ...List.generate(4, (index) {
+          String hintKey = 'hint${index + 1}';
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 16.0),
+            child: ElevatedButton(
+              onPressed: () => _checkAnswer(_currentQuest![hintKey]),
+              child: Text(_currentQuest![hintKey]),
+            ),
+          );
+        }),
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+            _refreshPoints();
+          },
+          child: Text(
+            '닫기',
+            style: TextStyle(color: Colors.red),
+          ),
+        )
+      ],
+    );
+  }
+
+  Widget _buildResultContent() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            _isCorrect ? '정답입니다!' : '오답입니다...',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: _isCorrect ? Colors.green : Colors.red,
+            ),
+          ),
+        ),
+        if (!_isCorrect)
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Text(
-              _currentQuest!['explanation'],
-              style: TextStyle(fontSize: 16),
-              textAlign: TextAlign.center,
+              '정답: ${_currentQuest!['answer']}',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue,
+              ),
             ),
           ),
-          Text(
-            _isCorrect ? '+1000 포인트' : '+100 포인트',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: _isCorrect ? Colors.green : Colors.grey,
-            ),
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            _currentQuest!['explanation'],
+            style: TextStyle(fontSize: 16),
+            textAlign: TextAlign.center,
           ),
-          Text(
-            _isCorrect ? '' : '다음번엔 꼭 맞춰봐요!',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey,
-            ),
+        ),
+        // 오답일 경우 정답도 표시
+        Text(
+          _isCorrect ? '+1000 포인트' : '+100 포인트',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: _isCorrect ? Colors.green : Colors.grey,
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _refreshPoints();
-            },
-            child: Text('확인'),
-          )
-        ],
-      ),
+        ),
+        Text(
+          _isCorrect ? '' : '다음번엔 꼭 맞춰봐요!',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.grey,
+          ),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+            _refreshPoints();
+          },
+          child: Text('확인'),
+        )
+      ],
     );
   }
+
 
   Future<void> _refreshPoints() async {
     final String? points = await _storage.read(key: 'points');
