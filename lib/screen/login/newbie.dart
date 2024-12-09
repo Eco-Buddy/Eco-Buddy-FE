@@ -27,11 +27,22 @@ class _NewbiePageState extends State<NewbiePage> {
     });
   }
 
+  bool _containsSpecialCharacters(String input) {
+    final RegExp specialCharRegex = RegExp(r'[!@#\$%^&*(),.?":{}|<>]');
+    return specialCharRegex.hasMatch(input);
+  }
+
   Future<void> _createPet() async {
     final petName = _petNameController.text.trim();
     if (petName.isEmpty) {
       setState(() {
         _errorMessage = '펫 이름을 입력해주세요!';
+      });
+      return;
+    }
+    else if (_containsSpecialCharacters(petName)) {
+      setState(() {
+        _errorMessage = '특수 문자는 사용할 수 없습니다!';
       });
       return;
     }
