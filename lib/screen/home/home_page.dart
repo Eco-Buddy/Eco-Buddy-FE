@@ -129,8 +129,6 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _showTrash = false;
     });
-
-    print("미션 완료: $reward 포인트 추가, 총 포인트: $updatedPoints");
   }
 
   Future<List<dynamic>> _loadMissionsJson() async {
@@ -276,8 +274,6 @@ class _HomePageState extends State<HomePage> {
 
                     // 포인트 갱신
                     final updatedPoints = petProvider.petPoints + (mission['reward'] as int);
-                    await petProvider.updatePetPoints(updatedPoints);
-
                     print("미션 완료: ${mission['reward']} 포인트 추가, 총 포인트: $updatedPoints");
                     await _onMissionComplete(mission['reward'] as int); // 미션 완료 처리
                   },

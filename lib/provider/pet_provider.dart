@@ -336,7 +336,8 @@ class PetProvider with ChangeNotifier {
 
         _pet.points = newPoints;
         notifyListeners(); // UI 업데이트
-        print('✅ 포인트 서버 동기화 및 업데이트 성공');
+        print('✅ 포인트 서버 동기화 및 업데이트 성공 $newPoints');
+
       }
       else if (response.statusCode == 401) {
         // 인증 오류 발생 시 처리

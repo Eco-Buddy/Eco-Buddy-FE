@@ -42,10 +42,10 @@ class CharacterProvider with ChangeNotifier {
       // 탄소 발생량이 10000보다 크면 'sad', 그렇지 않으면 'normal'
       if (result > 10000) {
         updateEmotion('sad');
-        print('탄소 발생량이 10000보다 큽니다. 감정은 sad');
+        //print('탄소 발생량이 10000보다 큽니다. 감정은 sad');
       } else {
         updateEmotion('normal');
-        print('탄소 발생량이 10000 이하입니다. 감정은 normal');
+        //print('탄소 발생량이 10000 이하입니다. 감정은 normal');
       }
     }
     else{
@@ -62,7 +62,7 @@ class CharacterProvider with ChangeNotifier {
     _walkTimer?.cancel();
     _walkTimer = Timer.periodic(const Duration(seconds: 3), (_) {
 
-      print('Timer triggered');
+      //print('Timer triggered');
       checkCarbonAndSetEmotion();
       _movingRight = _random.nextBool(); // 랜덤으로 이동 방향 설정
       int randomSteps = _random.nextInt(3) + 1; // 1~3 걸음 랜덤 설정
