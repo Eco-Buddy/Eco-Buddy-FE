@@ -324,7 +324,9 @@ class _HomePageState extends State<HomePage> {
       child: GestureDetector(
         onTap: () {
           print('현재 감정: ${characterProvider.getCurrentEmotion()}');
-        },
+
+
+          },
         child: Transform(
           alignment: Alignment.center,
           transform: Matrix4.identity()..scale(characterProvider.character.isFacingRight ? 1.0 : -1.0, 1.0),

@@ -63,8 +63,21 @@ class _MainPageState extends State<MainPage> {
       const HomePage(), // 홈 페이지
       const MenuPage(), // 메뉴 페이지
     ];
-    _initializeData();
-    _initializePetData(); // 펫 데이터 초기화
+    _initializeDataAndPetData();
+  }
+
+  Future<void> _initializeDataAndPetData() async {
+    try {
+      // 데이터 초기화
+      await _initializeData(); // 첫 번째 함수 실행
+      // 펫 데이터 초기화
+      await _initializePetData(); // 두 번째 함수 실행
+    } catch (e) {
+      print('❌ 초기화 중 오류 발생: $e');
+      setState(() {
+        hasError = true;
+      });
+    }
   }
 
   Future<void> _initializeData() async {

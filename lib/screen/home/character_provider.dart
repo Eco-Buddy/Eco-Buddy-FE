@@ -39,7 +39,7 @@ class CharacterProvider with ChangeNotifier {
 
       // 탄소 발생량 계산 (carbonTotal - discount)
       final result = carbonTotal - discount;
-
+      print(result);
       // 탄소 발생량이 10000보다 크면 'sad', 그렇지 않으면 'normal'
       if (result > 10000) {
         updateEmotion('sad');
