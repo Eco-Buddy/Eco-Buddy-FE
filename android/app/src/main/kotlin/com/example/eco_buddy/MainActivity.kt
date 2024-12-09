@@ -41,10 +41,10 @@ class MainActivity : FlutterActivity() {
         dailyPreferences = getSharedPreferences("DailyDataUsage", Context.MODE_PRIVATE)
         hourlyPreferences = getSharedPreferences("HourlyDataUsage", Context.MODE_PRIVATE)
 
-        val sharedPreferences = getSharedPreferences("AppData", Context.MODE_PRIVATE)
+        val sharedPreferences = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
         // 플래그 초기화
-        if (!sharedPreferences.contains("backend_failed")) {
-            sharedPreferences.edit().putBoolean("backend_failed", false).apply()
+        if (!sharedPreferences.contains("flutter.backend_failed")) {
+            sharedPreferences.edit().putBoolean("flutter.backend_failed", false).apply()
         }
 
         // 권한이 없으면
@@ -131,32 +131,28 @@ class MainActivity : FlutterActivity() {
                     result.success("Preferences reset.")
                 }
                 "sendData" -> {
-                    val arguments = call.arguments as? Map<*, *>
-                    if (arguments != null) {
-                        val accessToken = arguments["access_token"] as? String ?: ""
-                        val deviceId = arguments["device_id"] as? String ?: ""
-                        val userId = arguments["user_id"] as? String ?: ""
+                    // Flutter로부터 받은 데이터가 SharedPreferences에 저장되었는지 확인
+                    val sharedPreferences = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
 
-                        val sharedPreferences = getSharedPreferences("AppData", Context.MODE_PRIVATE)
-                        sharedPreferences.edit().apply {
-                            putString("access_token", accessToken)
-                            putString("device_id", deviceId)
-                            putString("user_id", userId)
-                            apply()
-                        }
+                    // SharedPreferences에 저장된 값 확인
+                    val accessToken = sharedPreferences.getString("flutter.accessToken", "No AccessToken Found")
+                    val userId = sharedPreferences.getString("flutter.userId", "No UserId Found")
+                    val deviceId = sharedPreferences.getString("flutter.deviceId", "No DeviceId Found")
 
-                        // 플래그 확인 후 재시도
-                        val backendFailed = sharedPreferences.getBoolean("backend_failed", false)
-                        if (backendFailed) {
-                            Log.d("SendData", "Previous operation failed. Retrying using testOnReceiveFunction...")
-                            testOnReceiveFunction()
-                        }
+                    Log.d("SharedPreferences Test", "AccessToken: $accessToken")
+                    Log.d("SharedPreferences Test", "UserId: $userId")
+                    Log.d("SharedPreferences Test", "DeviceId: $deviceId")
 
-                        result.success("Data received successfully.")
-                    } else {
-                        result.error("INVALID_ARGUMENTS", "Invalid arguments passed", null)
+                    // 플래그 확인 후 재시도
+                    val backendFailed = sharedPreferences.getBoolean("flutter.backend_failed", false)
+                    if (backendFailed) {
+                        Log.d("SendData", "Previous operation failed. Retrying using testOnReceiveFunction...")
+                        testOnReceiveFunction()
                     }
+
+                    result.success("Test Completed")
                 }
+
                 else -> {
                     result.notImplemented()
                 }
@@ -297,9 +293,6 @@ class MainActivity : FlutterActivity() {
         Log.d("HourlyData", "Initialized hourly data: ${Gson().toJson(filteredHourlyData)}")
     }
 
-
-
-
     // 계속 networkUsage 선언이 힘들어서
     @RequiresApi(Build.VERSION_CODES.M)
     private fun getDataUsageForPeriod(
@@ -395,10 +388,10 @@ class MainActivity : FlutterActivity() {
         override fun onReceive(context: Context, intent: Intent?) {
             if (intent?.action == "SEND_HOURLY_DATA") {
                 Log.d("Alarmcheck", "알람 작동함.")
-                val sharedPreferences = context.getSharedPreferences("AppData", Context.MODE_PRIVATE)
-                val accessToken = sharedPreferences.getString("access_token", "") ?: ""
-                val deviceId = sharedPreferences.getString("device_id", "") ?: ""
-                val userId = sharedPreferences.getString("user_id", "") ?: ""
+                val sharedPreferences = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+                val accessToken = sharedPreferences.getString("flutter.accessToken", "") ?: ""
+                val deviceId = sharedPreferences.getString("flutter.deviceId", "") ?: ""
+                val userId = sharedPreferences.getString("flutter.userId", "") ?: ""
 
                 val hourlyPreferences = context.getSharedPreferences("HourlyDataUsage", Context.MODE_PRIVATE)
                 val hourlyDataJson = hourlyPreferences.getString("hourlyData", "[]")
@@ -412,7 +405,7 @@ class MainActivity : FlutterActivity() {
                     sendWeeklyDataToBackend(context, json, accessToken, deviceId, userId)
                 } ?: Log.e("Debug", "WeeklyDataJson is null, empty, or invalid!")
 
-                val updatedAccessToken = sharedPreferences.getString("access_token", "") ?: ""
+                val updatedAccessToken = sharedPreferences.getString("flutter.accessToken", "") ?: ""
 
                 // hourly 값 보내기
                 hourlyDataJson?.let {
@@ -425,7 +418,7 @@ class MainActivity : FlutterActivity() {
         }
 
         private fun sendHourlyDataToBackend(context: Context, hourlyDataJson: String, accessToken: String, deviceId: String, userId: String) {
-            val sharedPreferences = context.getSharedPreferences("AppData", Context.MODE_PRIVATE)
+            val sharedPreferences = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
             val url = "http://ecobuddy.kro.kr:4525/dataUsage/save/hourly"
 
             // Parse hourly data
@@ -495,16 +488,16 @@ class MainActivity : FlutterActivity() {
 
                         if (newAccessToken.isNotBlank()) {
                             // Save the token to SharedPreferences
-                            sharedPreferences.edit().putString("access_token", newAccessToken).apply()
+                            sharedPreferences.edit().putString("flutter.accessToken", newAccessToken).apply()
                             Log.d("NewToken", "Hourly new access token saved: $newAccessToken")
                         }
 
                         Log.d("HourlyDataSender", "Hourly data sent successfully.")
                         // 작업 성공 시 플래그 초기화
-                        sharedPreferences.edit().putBoolean("backend_failed", false).apply()
+                        sharedPreferences.edit().putBoolean("flutter.backend_failed", false).apply()
                     } else {
                         Log.e("responseDataSender Hourly", "Failed with code: ${response.code}, message: ${response.message}")
-                        sharedPreferences.edit().putBoolean("backend_failed", true).apply()
+                        sharedPreferences.edit().putBoolean("flutter.backend_failed", true).apply()
                     }
                 }
             })
@@ -512,7 +505,7 @@ class MainActivity : FlutterActivity() {
 
         @RequiresApi(Build.VERSION_CODES.M)
         private fun sendWeeklyDataToBackend(context: Context, weeklyDataJson: String, accessToken: String, deviceId: String, userId: String) {
-            val sharedPreferences = context.getSharedPreferences("AppData", Context.MODE_PRIVATE)
+            val sharedPreferences = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
             val url = "http://ecobuddy.kro.kr:4525/dataUsage/save/daily"
 
             // Parse weekly data
@@ -576,15 +569,15 @@ class MainActivity : FlutterActivity() {
 
                         if (newAccessToken.isNotBlank()) {
                             // Save the token to SharedPreferences
-                            sharedPreferences.edit().putString("access_token", newAccessToken).apply()
+                            sharedPreferences.edit().putString("flutter.accessToken", newAccessToken).apply()
                             Log.d("NewToken", "Daily new access token saved: $newAccessToken")
                         }
 
                         Log.d("WeeklyDataSender", "Weekly data sent successfully.")
-                        sharedPreferences.edit().putBoolean("backend_failed", false).apply()
+                        sharedPreferences.edit().putBoolean("flutter.backend_failed", false).apply()
                     } else {
                         Log.e("responseDataSender weekly", "Failed with code: ${response.code}, message: ${response.message}")
-                        sharedPreferences.edit().putBoolean("backend_failed", true).apply()
+                        sharedPreferences.edit().putBoolean("flutter.backend_failed", true).apply()
                     }
                 }
             })

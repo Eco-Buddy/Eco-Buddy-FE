@@ -1,7 +1,10 @@
 import 'dart:convert'; // For jsonEncode
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:http/http.dart' as http; // For HTTP requests
+import 'package:http/http.dart' as http;
+
+import '../stats/kotlin_tokenmanager.dart'; // For HTTP requests
 
 class NewbiePage extends StatefulWidget {
   @override
@@ -24,11 +27,22 @@ class _NewbiePageState extends State<NewbiePage> {
     });
   }
 
+  bool _containsSpecialCharacters(String input) {
+    final RegExp specialCharRegex = RegExp(r'[!@#\$%^&*(),.?":{}|<>]');
+    return specialCharRegex.hasMatch(input);
+  }
+
   Future<void> _createPet() async {
     final petName = _petNameController.text.trim();
     if (petName.isEmpty) {
       setState(() {
         _errorMessage = '펫 이름을 입력해주세요!';
+      });
+      return;
+    }
+    else if (_containsSpecialCharacters(petName)) {
+      setState(() {
+        _errorMessage = '특수 문자는 사용할 수 없습니다!';
       });
       return;
     }
@@ -67,6 +81,10 @@ class _NewbiePageState extends State<NewbiePage> {
             key: 'accessToken',
             value: responseData['new_accessToken'],
           );
+
+          // 코틀린 문제 해결
+          await TokenManager.updateCredentials();
+
           print('✅ 새로운 펫 생성 성공 및 액세스 토큰 업데이트 완료!');
 
           Navigator.pushReplacementNamed(context, '/main');

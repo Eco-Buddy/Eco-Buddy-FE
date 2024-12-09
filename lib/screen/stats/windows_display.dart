@@ -462,16 +462,16 @@ class DisplayUsagePageState extends State<DisplayUsagePage> with SingleTickerPro
                   ),
                 ),
                 const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: resetPreferences,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                  ),
-                  child: const Text(
-                    "Reset Preferences",
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
+                // ElevatedButton(
+                //   onPressed: resetPreferences,
+                //   style: ElevatedButton.styleFrom(
+                //     backgroundColor: Colors.red,
+                //   ),
+                //   child: const Text(
+                //     "Reset Preferences",
+                //     style: TextStyle(color: Colors.white),
+                //   ),
+                // ),
               ],
             ),
           ),

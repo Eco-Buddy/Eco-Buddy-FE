@@ -1,8 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+
+import '../screen/stats/kotlin_tokenmanager.dart';
 
 class Pet {
   String petName;
@@ -167,13 +170,16 @@ class PetProvider with ChangeNotifier {
         print(responseData);
         // SecureStorage에 저장
         await secureStorage.write(
-          key: 'newAccessToken',
+          key: 'accessToken',
           value: responseData['new_accessToken'],
         );
         await secureStorage.write(
           key: 'petData',
           value: jsonEncode(responseData['pet']),
         );
+
+        // 코틀린 문제 해결
+        await TokenManager.updateCredentials();
 
         _pet = Pet.fromJson(responseData['pet']);
         print("✅ 펫 데이터 로드 성공 및 저장 완료");
@@ -182,7 +188,14 @@ class PetProvider with ChangeNotifier {
       }
       else if (response.statusCode == 401) {
         // 인증 오류 발생 시 처리
-        await handleUnauthorizedError();
+        if(Platform.isAndroid){
+          print('🔑 401 Android 재시도');
+          // 코틀린 동기화 문제 해결
+          await _retryWithUpdatedToken();
+        }
+        else if(Platform.isWindows){
+          await handleUnauthorizedError();
+        }
       } else {
         print('❌ 펫 데이터 로드 실패: ${response.statusCode}');
       }
@@ -203,6 +216,61 @@ class PetProvider with ChangeNotifier {
     print('펫 데이터: $_pet');
     print('펫 이름: ${_pet.petName}, 포인트: ${_pet.points}');
     notifyListeners();
+  }
+
+  Future<void> _retryWithUpdatedToken() async {
+    try {
+      final newAccessToken = await TokenManager.getAccessToken();
+      if (newAccessToken != null) {
+        await secureStorage.write(key: 'accessToken', value: newAccessToken);
+        final retryResponse = await http.post(
+          Uri.parse('http://ecobuddy.kro.kr:4525/pet/load'),
+          headers: {
+            'authorization': newAccessToken,
+            'deviceId': await secureStorage.read(key: 'deviceId') ?? '',
+            'userId': await secureStorage.read(key: 'userId') ?? '',
+          },
+        );
+
+        if (retryResponse.statusCode == 200) {
+          final responseData = jsonDecode(retryResponse.body);
+          print(responseData);
+          // SecureStorage에 저장
+          await secureStorage.write(
+            key: 'accessToken',
+            value: responseData['new_accessToken'],
+          );
+          await secureStorage.write(
+            key: 'petData',
+            value: jsonEncode(responseData['pet']),
+          );
+
+          // 코틀린 문제 해결
+          await TokenManager.updateCredentials();
+
+          _pet = Pet.fromJson(responseData['pet']);
+          print("✅ 펫 데이터 로드 성공 및 저장 완료");
+          print('🐾 Loaded pet data: $_pet');
+        } else {
+          print('❌ 재시도 실패 : ${retryResponse.statusCode}');
+          await handleUnauthorizedError();
+        }
+      } else {
+        print('❌ 재시도 실패');
+        await handleUnauthorizedError();
+      }
+    } catch (e) {
+      print('❌ 펫 데이터 로드 중 오류 발생 : $e');
+      _pet = Pet(
+        petName: 'Default Pet',
+        petLevel: 1,
+        experience: 0,
+        points: 0,
+        background: 1001,
+        floor: 2001,
+        mission: 0,
+      );
+    }
   }
 
   Future<void> updatePetPoints(int newPoints) async {
@@ -235,13 +303,16 @@ class PetProvider with ChangeNotifier {
         final responseData = jsonDecode(response.body);
         // SecureStorage에 저장
         await secureStorage.write(
-          key: 'newAccessToken',
+          key: 'accessToken',
           value: responseData['new_accessToken'],
         );
         await secureStorage.write(
           key: 'petData',
           value: jsonEncode(petData),
         );
+
+        // 코틀린 문제 해결
+        await TokenManager.updateCredentials();
 
         _pet.points = newPoints;
         notifyListeners(); // UI 업데이트
@@ -289,13 +360,16 @@ class PetProvider with ChangeNotifier {
         final responseData = jsonDecode(response.body);
         // SecureStorage에 저장
         await secureStorage.write(
-          key: 'newAccessToken',
+          key: 'accessToken',
           value: responseData['new_accessToken'],
         );
         await secureStorage.write(
           key: 'petData',
           value: jsonEncode(petData),
         );
+
+        // 코틀린 문제 해결
+        await TokenManager.updateCredentials();
 
         _pet.petName = newPetName;
         notifyListeners(); // UI 업데이트
@@ -348,6 +422,15 @@ class PetProvider with ChangeNotifier {
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
+        // SecureStorage에 저장
+        await secureStorage.write(
+          key: 'accessToken',
+          value: responseData['new_accessToken'],
+        );
+
+        // 코틀린 문제 해결
+        await TokenManager.updateCredentials();
+
         return responseData;
       } else if (response.statusCode == 401) {
         // 인증 오류 발생 시 처리
@@ -385,6 +468,18 @@ class PetProvider with ChangeNotifier {
     // 인증 오류 발생 시 처리
       await handleUnauthorizedError();
     }
+
+    final responseData = jsonDecode(response.body);
+
+    // SecureStorage에 저장
+    await secureStorage.write(
+      key: 'accessToken',
+      value: responseData['new_accessToken'],
+    );
+
+    // 코틀린 문제 해결
+    await TokenManager.updateCredentials();
+
     return response.statusCode == 200;
     } catch (e) {
       return false;

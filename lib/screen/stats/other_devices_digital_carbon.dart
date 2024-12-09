@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+import 'kotlin_tokenmanager.dart';
 import 'other_devices_digital_carbon_chart.dart';
 
 class BackendDataDisplay extends StatefulWidget {
@@ -143,9 +144,9 @@ class _BackendDataDisplayState extends State<BackendDataDisplay>
 
         // Update access token if provided
         final newAccessToken = dailyBody['new_accessToken'];
-        print(newAccessToken);
         if (newAccessToken != null) {
           await _secureStorage.write(key: 'accessToken', value: newAccessToken);
+          await TokenManager.updateCredentials();
         }
 
         final dailyUsage = dailyBody['usage'] as List<dynamic>;
@@ -174,6 +175,7 @@ class _BackendDataDisplayState extends State<BackendDataDisplay>
         print(newAccessToken);
         if (newAccessToken != null) {
           await _secureStorage.write(key: 'accessToken', value: newAccessToken);
+          await TokenManager.updateCredentials();
         }
 
         final hourlyUsage = hourlyBody['usage'] as List<dynamic>;
