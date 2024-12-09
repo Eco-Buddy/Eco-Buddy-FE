@@ -56,18 +56,22 @@ class _CustomModalState extends State<CustomModal> with TickerProviderStateMixin
       // 2. 서버에서 데이터 가져오기
       final range = selectedCategory == '벽지' ? 1000 : 2000;
       final itemData = await petProvider.fetchItemsByRange(range);
+      print('테스트');
 
       if (itemData.containsKey('items')) {
         final purchasedItemIds = (itemData['items'] as List)
             .map<int>((item) => item['itemId'] as int)
             .toList();
 
-        // items.json에서 아이템 데이터 로드
+        // 3. items.json에서 아이템 데이터 로드
         final String response = await rootBundle.loadString('assets/items/items.json');
         final data = jsonDecode(response) as Map<String, dynamic>;
 
-        // 3. 서버 데이터와 병합
-        final updatedItems = (data[selectedCategory] as List).map<Map<String, dynamic>>((item) {
+        // 4. 서버 데이터와 병합 후 purchasedItemIds에 포함된 아이템만 필터링
+        final updatedItems = (data[selectedCategory] as List).where((item) {
+          final itemId = item['itemId'];
+          return purchasedItemIds.contains(itemId); // purchasedItemIds에 포함된 아이템만 표시
+        }).map<Map<String, dynamic>>((item) {
           final isPurchased = purchasedItemIds.contains(item['itemId']);
           return {
             ...item,
@@ -75,13 +79,13 @@ class _CustomModalState extends State<CustomModal> with TickerProviderStateMixin
           };
         }).toList();
 
-        // 4. 캐시 업데이트
+        // 5. 캐시 업데이트
         await secureStorage.write(
           key: 'cachedItems_$selectedCategory',
           value: jsonEncode(updatedItems),
         );
 
-        // 5. UI 업데이트
+        // 6. UI 업데이트
         setState(() {
           items[selectedCategory] = updatedItems;
         });
@@ -99,6 +103,7 @@ class _CustomModalState extends State<CustomModal> with TickerProviderStateMixin
       );
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
