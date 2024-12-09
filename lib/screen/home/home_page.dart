@@ -142,7 +142,7 @@ class _HomePageState extends State<HomePage> {
           _buildFloor(_floorImage),
           _buildCharacter(context),
           Positioned(
-            top: 20,
+            top: 30,
             left: 16,
             right: 16,
             child: Row(
@@ -211,12 +211,20 @@ class _HomePageState extends State<HomePage> {
       top: MediaQuery.of(context).size.height * 0.2,
       right: 16,
       child: GestureDetector(
-        onTap: () {
+        onTap: () async {
           print("Quest Button Clicked");
-          showDialog(
+          await showDialog(
             context: context,
-            builder: (context) => QuestDialog(), // QuestDialog를 호출
+            builder: (context) => QuestDialog(),
           );
+          // Secure Storage에서 포인트 갱신
+          final secureStorage = FlutterSecureStorage();
+          final String? updatedPoints = await secureStorage.read(key: 'points');
+          if (updatedPoints != null) {
+            final petProvider = Provider.of<PetProvider>(context, listen: false);
+            petProvider.updatePetPoints(int.parse(updatedPoints));
+            print('퀘스트 창 닫힘 후 포인트 갱신됨: $updatedPoints');
+          }
         },
         child: Image.asset(
           'assets/images/icon/quest_icon.png',
@@ -343,7 +351,7 @@ class _HomePageState extends State<HomePage> {
   Widget _buildUserProfile(String petName, String profileImage) {
     return Container(
       decoration: _buildInfoBoxDecoration(),
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
       child: Row(
         children: [
           CircleAvatar(
@@ -370,7 +378,7 @@ class _HomePageState extends State<HomePage> {
   Widget _buildTokenInfo(int points) {
     return Container(
       decoration: _buildInfoBoxDecoration(),
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
       child: Row(
         children: [
           CircleAvatar(
