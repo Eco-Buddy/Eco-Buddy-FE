@@ -69,7 +69,9 @@ class _MainPageState extends State<MainPage> {
   Future<void> _initializeDataAndPetData() async {
     try {
       // 데이터 초기화
-      await _initializeData(); // 첫 번째 함수 실행
+      if(Platform.isAndroid){
+        await _initializeData(); // 첫 번째 함수 실행
+      }
       // 펫 데이터 초기화
       await _initializePetData(); // 두 번째 함수 실행
     } catch (e) {
