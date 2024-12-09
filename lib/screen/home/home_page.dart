@@ -30,6 +30,7 @@ class _HomePageState extends State<HomePage> {
   late Map<String, dynamic> _itemsData;
   final secureStorage = const FlutterSecureStorage();
   late CharacterProvider _characterProvider;
+  int userPoints = 0; // 홈 페이지에서 관리할 포인트
   String _emotionText = ''; // 감정을 저장할 텍스트
   bool _showTrash = false; // 쓰레기 아이콘을 보일지 여부
   static const _missionCooldown = Duration(seconds: 5); // 미션 쿨다운 시간 (30분)
@@ -39,7 +40,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _initializeData();
     _checkTrashCooldown();
-
+    _updatePetPoints();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final characterProvider = Provider.of<CharacterProvider>(context, listen: false);
       // Secure Storage에서 carbonTotal과 discount를 읽음
@@ -48,13 +49,13 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  Future<void> _updatePetPoints(int newPoints) async {
+  Future<void> _updatePetPoints() async {
     final petProvider = Provider.of<PetProvider>(context, listen: false);
-
     // petPoints 값 업데이트
-    await petProvider.updatePetPoints(newPoints);
-
-    print("포인트 변경됨: $newPoints");
+    setState(() {
+      userPoints = petProvider.pet.points; // PetProvider에서 포인트 가져오기
+    });
+    print("포인트 변경됨:");
   }
 
   Future<void> _checkCharacterEmotion() async {
@@ -82,7 +83,6 @@ class _HomePageState extends State<HomePage> {
               final petProvider = Provider.of<PetProvider>(context, listen: false);
               if (petProvider.petPoints >= coinCost) {
                 await petProvider.updatePetPoints(petProvider.petPoints - coinCost);
-                print("코인 소모: $coinCost, 남은 포인트: ${petProvider.petPoints - coinCost}");
               } else {
                 print("포인트 부족");
               }
@@ -239,7 +239,11 @@ class _HomePageState extends State<HomePage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _buildUserProfile(petProvider.petName, _profileImage),
-                _buildTokenInfo(petProvider.petPoints),
+                Consumer<PetProvider>(
+                  builder: (context, petProvider, child) {
+                    return _buildTokenInfo(petProvider.petPoints);
+                  },
+                ),
               ],
             ),
           ),
@@ -302,6 +306,7 @@ class _HomePageState extends State<HomePage> {
       child: GestureDetector(
         onTap: () async {
           print("Quest Button Clicked");
+
           await showDialog(
             context: context,
             builder: (context) => QuestDialog(),
@@ -356,6 +361,7 @@ class _HomePageState extends State<HomePage> {
           _buildIconButton(
             'assets/images/icon/shop_icon.png',
             onTap: () {
+
               showModalBottomSheet(
                 context: context,
                 isScrollControlled: true, // 모달의 크기 조정 가능
@@ -513,27 +519,38 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildTokenInfo(int points) {
     return Consumer<PetProvider>(
-        builder: (context, petProvider, child) {
-        return Container(
-          decoration: _buildInfoBoxDecoration(),
-          padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: Colors.transparent,
-                backgroundImage: const AssetImage('assets/images/icon/leaf_token.png'),
-              ),
-              const SizedBox(width: 8.0),
-              Text(
-                points.toString(),
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+      builder: (context, petProvider, child) {
+        return GestureDetector(
+          onTap: () async {
+            // 토큰 아이콘 클릭 시 printAllSecureStorage() 호출
+            await petProvider.printAllSecureStorage();
+            // 필요 시 알림창 표시
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('SecureStorage 내용이 콘솔에 출력되었습니다.')),
+            );
+          },
+          child: Container(
+            decoration: _buildInfoBoxDecoration(),
+            padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: Colors.transparent,
+                  backgroundImage:
+                  const AssetImage('assets/images/icon/leaf_token.png'),
                 ),
-              ),
-            ],
+                const SizedBox(width: 8.0),
+                Text(
+                  points.toString(),
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

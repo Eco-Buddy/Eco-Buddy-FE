@@ -71,11 +71,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
+    return ChangeNotifierProvider<PetProvider>(
       create: (_) {
         // PetProvider에 SecureStorage 전달
         final petProvider = PetProvider(secureStorage: secureStorage, context: context);
-        _initializePetProvider(petProvider);
+        petProvider.loadPetDataFromServer();
         return petProvider;
       },
       child: MaterialApp(
@@ -91,10 +91,5 @@ class MyApp extends StatelessWidget {
         },
       ),
     );
-  }
-
-  // PetProvider 초기화 로직
-  Future<void> _initializePetProvider(PetProvider petProvider) async {
-    await petProvider.loadPetDataFromServer();
   }
 }

@@ -58,7 +58,27 @@ class _NewbiePageState extends State<NewbiePage> {
     final userId = await _secureStorage.read(key: 'userId');
 
     if (accessToken == null || deviceId == null || userId == null) {
-      print('❌ 인증 정보가 부족합니다.');
+      print('❌ 인증 정보가 부족합니다. 시작화면으로 돌아갈게요.');
+      showDialog(
+        context: context,
+        barrierDismissible: false,  // 사용자가 다이얼로그 바깥을 눌러도 닫히지 않도록 설정
+        builder: (context) {
+          return AlertDialog(
+            title: Text('인증 오류'),
+            content: Text('❌ 인증 정보가 부족합니다. 시작화면으로 돌아갈게요.'),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () {
+                  // 3. 다이얼로그 닫고 시작 화면으로 이동
+                  Navigator.of(context).pop();  // 다이얼로그 닫기
+                  Navigator.pushNamedAndRemoveUntil(context, '/start', (route) => false);
+                },
+                child: Text('확인'),
+              ),
+            ],
+          );
+        },
+      );
       return;
     }
 

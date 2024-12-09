@@ -87,9 +87,10 @@ class _StartPageState extends State<StartPage> {
   Future<void> _checkLoginAndNavigate() async {
     final accessToken = await _secureStorage.read(key: 'accessToken');
     final deviceId = await _secureStorage.read(key: 'deviceId');
+    if(deviceId == null)
+      _fetchDeviceId();
     final userId = await _secureStorage.read(key: 'userId');
     final sessionCookie = await _secureStorage.read(key: 'session_cookie');
-
 
     print('토큰: $accessToken');
     print('기기: $deviceId');
@@ -97,13 +98,39 @@ class _StartPageState extends State<StartPage> {
     print('세션 쿠키: $sessionCookie');
 
     if (accessToken != null && deviceId != null && userId != null) {
-      print('🎉이전 로그인 기록 확인, 메인 페이지로 이동합니다.');
-      Navigator.pushReplacementNamed(context, '/main');
+      print('🎉이전 로그인 기록 확인, 2차 검증.');
+      checkMembership();
     } else {
       print('🔒로그인 정보가 없습니다. 로그인 페이지로 이동합니다.');
       Navigator.pushReplacementNamed(context, '/login');
     }
   }
+
+  Future<void> checkMembership() async {
+
+    final accessToken = await _secureStorage.read(key: 'accessToken') ?? '';
+    final deviceId = await _secureStorage.read(key: 'deviceId') ?? '';
+    final userId = await _secureStorage.read(key: 'userId') ?? '';
+
+    final response = await http.post(
+      Uri.parse('http://ecobuddy.kro.kr:4525/check'),
+      headers: {
+        'authorization': accessToken,
+        'deviceId': deviceId,
+        'userId': userId,
+      },
+    );
+
+    if (response.statusCode == 200) {
+      print('🎉기존 계정 확인, 메인 페이지로 이동합니다.');
+      Navigator.pushReplacementNamed(context, '/main');
+    }
+    else {
+      print('🔒회원 정보가 없습니다. 로그인 페이지로 이동합니다.');
+      Navigator.pushReplacementNamed(context, '/login');
+    }
+  }
+
 
   // /start API 호출 및 세션 생성
   Future<void> _sendDeviceId() async {

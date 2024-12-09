@@ -63,7 +63,17 @@ class PetProvider with ChangeNotifier {
   final FlutterSecureStorage secureStorage;
   final BuildContext context;
   bool isInitialized = false;
-  late Pet _pet;
+  Pet _pet = Pet(
+    petName: 'Default Pet',
+    petLevel: 1,
+    experience: 0,
+    points: 0,
+    background: 1001,
+    floor: 2001,
+    mission: 0,
+  );
+  Pet get pet => _pet;
+
 
   PetProvider({required this.secureStorage, required this.context}) {
     // 기본값 설정
@@ -86,6 +96,8 @@ class PetProvider with ChangeNotifier {
     _pet = pet;
     notifyListeners();
   }
+
+
 
   Future<void> handleUnauthorizedError() async {
     // 알림 창 띄우기
@@ -112,7 +124,7 @@ class PetProvider with ChangeNotifier {
     print('✅ Secure Storage 초기화 완료');
 
     // StartPage로 이동
-    Navigator.pushReplacementNamed(context, '/start');
+    Navigator.pushNamedAndRemoveUntil(context, '/start', (route) => false);
   }
 
   Future<void> deleteExceptSpecificKeys() async {
@@ -335,8 +347,8 @@ class PetProvider with ChangeNotifier {
         await TokenManager.updateCredentials();
 
         _pet.points = newPoints;
-        notifyListeners(); // UI 업데이트
         print('✅ 포인트 서버 동기화 및 업데이트 성공 $newPoints');
+        notifyListeners(); // UI 업데이트
 
       }
       else if (response.statusCode == 401) {

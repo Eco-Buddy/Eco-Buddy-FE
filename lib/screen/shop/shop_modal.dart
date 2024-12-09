@@ -120,6 +120,23 @@ class _ShopModalState extends State<ShopModal> with TickerProviderStateMixin {
     }
   }
 
+  Future<void> _spendPoints(int price) async {
+    final petProvider = Provider.of<PetProvider>(context, listen: false);
+    if (userPoints >= price) {
+      await petProvider.updatePetPoints(userPoints - price); // 포인트 업데이트 호출
+      setState(() {
+        userPoints -= price;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('포인트가 소모되었습니다.')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('포인트가 부족합니다.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -276,6 +293,10 @@ class _ShopModalState extends State<ShopModal> with TickerProviderStateMixin {
                     child: const Text('닫기'),
                   ),
                   const SizedBox(height: 16.0),
+                  ElevatedButton(
+                    onPressed: () => _spendPoints(100),
+                    child: const Text('포인트 소모'),
+                  ),
                 ],
               ),
             );

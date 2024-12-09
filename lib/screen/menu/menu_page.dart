@@ -131,7 +131,7 @@ class _MenuPageState extends State<MenuPage> {
         print('✅ Windows WebView cookies and cache cleared.');
       }
 
-      Navigator.pushReplacementNamed(context, '/start');
+      Navigator.pushNamedAndRemoveUntil(context, '/start', (route) => false);
     } catch (e) {
       print('❌ 로그아웃 처리 중 오류 발생: $e');
     }
@@ -177,7 +177,7 @@ class _MenuPageState extends State<MenuPage> {
         print('✅ Windows WebView cookies and cache cleared.');
       }
 
-      Navigator.pushReplacementNamed(context, '/start');
+      Navigator.pushNamedAndRemoveUntil(context, '/start', (route) => false);
     } catch (e) {
       print('❌ 회원탈퇴 처리 중 오류 발생: $e');
     }

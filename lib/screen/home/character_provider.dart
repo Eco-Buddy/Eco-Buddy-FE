@@ -15,12 +15,20 @@ class CharacterProvider with ChangeNotifier {
   bool _movingRight = true; // 초기 방향: 오른쪽
   final Random _random = Random();
   final secureStorage = const FlutterSecureStorage(); // Secure Storage 인스턴스
-  String getCurrentEmotion() {
 
+  bool _isDisposed = false; // dispose 상태 추적용 변수
+
+  @override
+  void dispose() {
+    _isDisposed = true;  // dispose 호출 시 상태 변경
+    super.dispose();
+  }
+
+  String getCurrentEmotion() {
     return character.emotion;
   }
+
   void updateEmotion(String emotion) {
-    // Update character's emotion and stop walking if 'sad'
     character.updateEmotion(emotion);
     if (emotion == 'sad') {
       stopWalking();  // Stop walking if sad
@@ -29,90 +37,75 @@ class CharacterProvider with ChangeNotifier {
   }
 
   Future<void> checkCarbonAndSetEmotion() async {
-    // Secure Storage에서 carbonTotal과 discount를 읽어옴
     final carbonTotalString = await secureStorage.read(key: 'carbonTotal');
     final discountString = await secureStorage.read(key: 'discount');
-    //print('carbonTotal = $carbonTotalString');
-    //print('discount = $discountString');
-    // 값이 존재하면 파싱하여 계산
     if (carbonTotalString != null && discountString != null) {
-      // 탄소 발생량 계산 (carbonTotal - discount)
       final result = double.parse(carbonTotalString) - double.parse(discountString);
-      //print('result = $result');
-      // 탄소 발생량이 10000보다 크면 'sad', 그렇지 않으면 'normal'
       if (result > 10000) {
         updateEmotion('sad');
-        //print('탄소 발생량이 10000보다 큽니다. 감정은 sad');
       } else {
         updateEmotion('normal');
-        //print('탄소 발생량이 10000 이하입니다. 감정은 normal');
       }
-    }
-    else{
+    } else {
       print('응 없어');
     }
   }
 
   void startWalking(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    print('Walking started with screenWidth: $screenWidth'); // 디버깅 로그
-    // 여기서 캐릭터가 처음 시작할 때부터 걷기 시작
-    _moveCharacter(screenWidth, steps: 1, speed: 100); // 한번의 작은 걸음으로 시작
+    _moveCharacter(screenWidth, steps: 1, speed: 100);
 
     _walkTimer?.cancel();
     _walkTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (_isDisposed) return; // 위젯이 dispose되었으면 더 이상 작업을 하지 않음
 
-      //print('Timer triggered');
       checkCarbonAndSetEmotion();
       _movingRight = _random.nextBool(); // 랜덤으로 이동 방향 설정
       int randomSteps = _random.nextInt(3) + 1; // 1~3 걸음 랜덤 설정
       double randomSpeed = _random.nextDouble() * 100 + 50; // 50~150ms 랜덤 속도 설정
-      _moveCharacter(screenWidth, steps: randomSteps, speed: randomSpeed); // 랜덤 걸음 수와 속도 적용
+      _moveCharacter(screenWidth, steps: randomSteps, speed: randomSpeed);
     });
   }
 
-
   void _moveCharacter(double screenWidth, {required int steps, required double speed}) {
-    if (character.emotion != 'happy' && character.emotion != 'normal')  return; // happy 상태에서만 움직임
+    if (character.emotion != 'happy' && character.emotion != 'normal') return; // happy 상태에서만 움직임
 
-    character.isWalking = true; // 걷는 상태로 변경
-    character.updateWalkFrame(); // 걷기 애니메이션 초기화
+    character.isWalking = true;
+    character.updateWalkFrame();
     notifyListeners();
 
     int completedSteps = 0;
-    final stepDistance = 15.0; // 한 번에 움직일 거리
+    final stepDistance = 15.0;
     final stepTimer = Timer.periodic(Duration(milliseconds: speed.toInt()), (timer) {
-      if (completedSteps >= steps*4) {
-        timer.cancel(); // 모든 걸음 완료 시 타이머 취소
+      if (_isDisposed) {
+        timer.cancel();  // 위젯이 dispose되었으면 타이머 취소
+        return;
+      }
+
+      if (completedSteps >= steps * 4) {
+        timer.cancel();
         character.isWalking = false;
-        character.currentImage = _getStaticImageForEmotion(character.emotion); // 기본 이미지로 복원
+        character.currentImage = _getStaticImageForEmotion(character.emotion);
         notifyListeners();
         return;
       }
 
       final currentX = character.position.dx;
       if (_movingRight && currentX + stepDistance + 160 >= screenWidth) {
-        _movingRight = false; // 오른쪽 경계 도달 시 방향 변경
+        _movingRight = false;
       } else if (!_movingRight && currentX - stepDistance <= 0) {
-        _movingRight = true; // 왼쪽 경계 도달 시 방향 변경 및
+        _movingRight = true;
       }
 
       final newPosition = Offset(
-        _movingRight ? currentX + stepDistance : currentX - stepDistance, // 방향 수정
+        _movingRight ? currentX + stepDistance : currentX - stepDistance,
         character.position.dy,
       );
 
-      character.moveTo(newPosition, faceRight: !_movingRight); // 방향에 따라 시선 반전
-      character.updateWalkFrame(); // 걷기 애니메이션 프레임 업데이트
-      if (completedSteps >= steps * 4) { // 걸음 수 * 프레임 수 완료
-        timer.cancel();
-        character.isWalking = false;
-        character.currentImage = _getStaticImageForEmotion(character.emotion); // 기본 이미지로 복원
-        notifyListeners();
-        return;
-      }
-      notifyListeners();
+      character.moveTo(newPosition, faceRight: !_movingRight);
+      character.updateWalkFrame();
       completedSteps++;
+      notifyListeners();
     });
   }
 
@@ -130,7 +123,7 @@ class CharacterProvider with ChangeNotifier {
   void stopWalking() {
     _walkTimer?.cancel();
     character.isWalking = false;
-    character.currentImage = _getStaticImageForEmotion(character.emotion); // 기본 이미지로 복원
+    character.currentImage = _getStaticImageForEmotion(character.emotion);
     notifyListeners();
   }
 }
