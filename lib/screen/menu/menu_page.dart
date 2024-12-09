@@ -51,6 +51,20 @@ class _MenuPageState extends State<MenuPage> {
     }
   }
 
+  Future<void> deleteExceptSpecificKeys() async {
+    final secureStorage = const FlutterSecureStorage();
+
+    // 키 목록을 가져온 후 필요한 항목만 삭제
+    final keysToDelete = await secureStorage.readAll();
+
+    // 'carbonTotal'과 'discount'를 제외한 모든 키 삭제
+    keysToDelete.forEach((key, value) {
+      if (key != 'carbonTotal' && key != 'discount') {
+        secureStorage.delete(key: key);
+      }
+    });
+  }
+
   Future<void> _logout() async {
     try {
       final provider = await _secureStorage.read(key: 'provider');
@@ -70,12 +84,20 @@ class _MenuPageState extends State<MenuPage> {
         }
       }
 
-      await _secureStorage.deleteAll();
+      await deleteExceptSpecificKeys();
       print('🔑 Secure storage cleared.');
 
       if (Platform.isAndroid && _androidWebViewController != null) {
         await _androidWebViewController!.clearCache();
         print('✅ Android WebView cache cleared.');
+
+        final cookieManager = WebViewCookieManager();
+        final cookiesCleared = await cookieManager.clearCookies();
+        if (cookiesCleared) {
+          print('✅ Android WebView cookies cleared.');
+        } else {
+          print('⚠️ No cookies to clear.');
+        }
       } else if (Platform.isWindows && _windowsWebViewController != null && _isInitialized) {
         await _windowsWebViewController!.clearCache();
         await _windowsWebViewController!.clearCookies();

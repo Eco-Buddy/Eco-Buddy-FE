@@ -10,6 +10,9 @@ import '../shop/custom_modal.dart';
 import './mission_dialog.dart';
 import './quest_dialog.dart';
 import 'character_provider.dart';
+import 'quest_dialog.dart';  // 퀘스트 다이얼로그
+import 'package:intl/intl.dart'; // 시간을 비교하고 포맷을 지정하기 위한 라이브러리
+import 'package:login_test/screen/home/sad_mood_dialog.dart';  // 임포트 추가
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -26,12 +29,16 @@ class _HomePageState extends State<HomePage> {
   String _userName = '사용자 이름';
   late Map<String, dynamic> _itemsData;
   final secureStorage = const FlutterSecureStorage();
+  late CharacterProvider _characterProvider;
   String _emotionText = ''; // 감정을 저장할 텍스트
+  bool _showTrash = false; // 쓰레기 아이콘을 보일지 여부
+  static const _missionCooldown = Duration(seconds: 5); // 미션 쿨다운 시간 (30분)
 
   @override
   void initState() {
     super.initState();
     _initializeData();
+    _checkTrashCooldown();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final characterProvider = Provider.of<CharacterProvider>(context, listen: false);
@@ -39,6 +46,82 @@ class _HomePageState extends State<HomePage> {
       characterProvider.updateEmotion('normal');
       characterProvider.startWalking(context);
     });
+  }
+
+  Future<void> _checkCharacterEmotion() async {
+    if (_characterProvider.getCurrentEmotion() == 'sad') {
+      // 감정이 sad일 때 다이얼로그 띄우기
+      showDialog(
+        context: context,
+        builder: (context) => SadMoodDialog(
+          onQuizSelected: () {
+            // 퀴즈 풀기 선택 시 처리
+            showDialog(
+              context: context,
+              builder: (context) => QuestDialog(),
+            );
+          },
+          onCoinSelected: () async {
+            // 코인 소모하기 선택 시 처리
+            final secureStorage = FlutterSecureStorage();
+            final String? carbonTotal = await secureStorage.read(key: 'carbonTotal');
+            final discount = await secureStorage.read(key: 'discount');
+            if (carbonTotal != null && discount != null) {
+              final result = double.tryParse(carbonTotal) ?? 0.0;
+              final coinCost = (result / 10000).toInt() * 100;  // 코인 계산
+
+              final petProvider = Provider.of<PetProvider>(context, listen: false);
+              if (petProvider.petPoints >= coinCost) {
+                await petProvider.updatePetPoints(petProvider.petPoints - coinCost);
+                print("코인 소모: $coinCost, 남은 포인트: ${petProvider.petPoints - coinCost}");
+              } else {
+                print("포인트 부족");
+              }
+            }
+          },
+        ),
+      );
+    }
+  }
+
+  Future<void> _checkTrashCooldown() async {
+    final lastMissionTimeString = await secureStorage.read(key: 'lastMissionTime');
+    if (lastMissionTimeString != null) {
+      print(lastMissionTimeString);
+      final lastMissionTime = DateTime.parse(lastMissionTimeString);
+      final currentTime = DateTime.now();
+      final timeDifference = currentTime.difference(lastMissionTime);
+
+      if (timeDifference >= _missionCooldown) {
+        setState(() {
+          _showTrash = true; // 일정 시간이 지나면 쓰레기 아이콘을 다시 보이도록 설정
+        });
+      }
+    } else {
+      // lastMissionTime이 null이면 첫 실행이므로, 바로 쓰레기 아이콘을 표시
+      print('null');
+      setState(() {
+        _showTrash = true;
+      });
+    }
+  }
+
+  Future<void> _onMissionComplete(int reward) async {
+    final petProvider = Provider.of<PetProvider>(context, listen: false);
+    final updatedPoints = petProvider.petPoints + reward;
+
+    // 포인트 갱신
+    await petProvider.updatePetPoints(updatedPoints);
+
+    // 현재 시간을 secureStorage에 저장 (미션 완료 시간)
+    await secureStorage.write(key: 'lastMissionTime', value: DateTime.now().toIso8601String());
+
+    // 쓰레기 아이콘을 숨김
+    setState(() {
+      _showTrash = false;
+    });
+
+    print("미션 완료: $reward 포인트 추가, 총 포인트: $updatedPoints");
   }
 
   Future<List<dynamic>> _loadMissionsJson() async {
@@ -154,7 +237,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           _buildIcons(context),
-          _buildTrash(context),
+          if (_showTrash) _buildTrash(context), // 쓰레기 아이콘이 보일 때만 표시
           _buildQuestButton(context),
         ],
       ),
@@ -164,8 +247,8 @@ class _HomePageState extends State<HomePage> {
   Widget _buildTrash(BuildContext context) {
     final petProvider = Provider.of<PetProvider>(context);
     return Positioned(
-      bottom: 150,
-      left: MediaQueryData.fromWindow(WidgetsBinding.instance.window).size.width / 3,
+      bottom: 120,
+      left: MediaQueryData.fromWindow(WidgetsBinding.instance.window).size.width * 4 / 5,
       child: GestureDetector(
         onTap: () async {
           final missions = await _loadMissionsJson();
@@ -187,6 +270,7 @@ class _HomePageState extends State<HomePage> {
                     await petProvider.updatePetPoints(updatedPoints);
 
                     print("미션 완료: ${mission['reward']} 포인트 추가, 총 포인트: $updatedPoints");
+                    await _onMissionComplete(mission['reward'] as int); // 미션 완료 처리
                   },
 
                   onLater: () {
@@ -252,7 +336,7 @@ class _HomePageState extends State<HomePage> {
       child: Image.asset(
         floorImage,
         fit: BoxFit.cover,
-        height: 150,
+        height: 130,
       ),
     );
   }
@@ -283,12 +367,12 @@ class _HomePageState extends State<HomePage> {
               );
             },
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
 
           _buildIconButton(
             'assets/images/icon/custom_icon.png',
-            onTap: () {
-              showModalBottomSheet(
+            onTap: () async {  // 여기에서 onTap을 async로 변경
+              await showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
@@ -300,7 +384,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 builder: (BuildContext context) {
                   return CustomModal(
-                    onItemsSelected: (backgroundId, floorId) {
+                    onItemsSelected: (backgroundId, floorId) async {  // 이 부분도 async로 변경
                       print('Selected backgroundId: $backgroundId, floorId: $floorId');
 
                       setState(() {
@@ -311,6 +395,16 @@ class _HomePageState extends State<HomePage> {
                           _floorImage = _getItemImageById('바닥', floorId);
                         }
                       });
+
+                      final petDataString = await secureStorage.read(key: 'petData');
+                      Map<String, dynamic> petData = petDataString != null ? jsonDecode(petDataString) : {};
+
+                      // Update the petData with new background and floor
+                      petData['background'] = backgroundId;
+                      petData['floor'] = floorId;
+                      await secureStorage.write(key: 'petData', value: jsonEncode(petData));
+
+                      print('Updated petData: $petData');
                     },
                   );
                 },
@@ -327,14 +421,51 @@ class _HomePageState extends State<HomePage> {
 
     return AnimatedPositioned(
       duration: const Duration(milliseconds: 500),
-      bottom: 140, // 바닥 이미지 위
+      bottom: 120, // 바닥 이미지 위
       left: characterProvider.character.position.dx,
       child: GestureDetector(
         onTap: () {
-          print('현재 감정: ${characterProvider.getCurrentEmotion()}');
+          print('현재 감정: ${characterProvider.getCurrentEmotion()}'); // 클릭 시 로그 확인
+          characterProvider.checkCarbonAndSetEmotion();
+          if (characterProvider.getCurrentEmotion() == 'sad') {
+            showDialog(
+              context: context,
+              builder: (context) {
+                return SadMoodDialog(
+                  onQuizSelected: () {
+                    // 퀴즈 풀기 선택 시 처리
+                    showDialog(
+                      context: context,
+                      builder: (context) => QuestDialog(),
+                    );
+                  },
+                  onCoinSelected: () async {
+                    // 코인 소모하기 선택 시 처리
+                    final secureStorage = FlutterSecureStorage();
+                    final String? carbonTotal = await secureStorage.read(
+                        key: 'carbonTotal');
+                    final discount = await secureStorage.read(key: 'discount');
+                    if (carbonTotal != null && discount != null) {
+                      final result = double.tryParse(carbonTotal) ?? 0.0;
+                      final coinCost = (result / 10000).toInt() * 100; // 코인 계산
 
-
-          },
+                      final petProvider = Provider.of<PetProvider>(
+                          context, listen: false);
+                      if (petProvider.petPoints >= coinCost) {
+                        await petProvider.updatePetPoints(petProvider
+                            .petPoints - coinCost);
+                        print("코인 소모: $coinCost, 남은 포인트: ${petProvider
+                            .petPoints - coinCost}");
+                      } else {
+                        print("포인트 부족");
+                      }
+                    }
+                  },
+                );
+              },
+            );
+          }
+        },
         child: Transform(
           alignment: Alignment.center,
           transform: Matrix4.identity()..scale(characterProvider.character.isFacingRight ? 1.0 : -1.0, 1.0),
