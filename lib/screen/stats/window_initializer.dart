@@ -139,9 +139,16 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:02 /f
       needsSync = true;
     } else if (lastSyncTimestamp != null) {
       final lastSyncTime = DateTime.parse(lastSyncTimestamp);
-      final durationSinceLastSync = now.difference(lastSyncTime);
 
-      if (durationSinceLastSync.inHours >= 1 || now.day != lastSyncTime.day) {
+      final nextScheduledSyncTime = DateTime(
+        lastSyncTime.year,
+        lastSyncTime.month,
+        lastSyncTime.day,
+        lastSyncTime.hour + 1,
+        2,
+      );
+
+      if (now.isAfter(nextScheduledSyncTime) || now.day != lastSyncTime.day) {
         needsSync = true;
       }
     } else {
