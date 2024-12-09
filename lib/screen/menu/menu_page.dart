@@ -71,6 +71,14 @@ class _MenuPageState extends State<MenuPage> {
       if (Platform.isAndroid && _androidWebViewController != null) {
         await _androidWebViewController!.clearCache();
         print('✅ Android WebView cache cleared.');
+
+        final cookieManager = WebViewCookieManager();
+        final cookiesCleared = await cookieManager.clearCookies();
+        if (cookiesCleared) {
+          print('✅ Android WebView cookies cleared.');
+        } else {
+          print('⚠️ No cookies to clear.');
+        }
       } else if (Platform.isWindows && _windowsWebViewController != null && _isInitialized) {
         await _windowsWebViewController!.clearCache();
         await _windowsWebViewController!.clearCookies();
