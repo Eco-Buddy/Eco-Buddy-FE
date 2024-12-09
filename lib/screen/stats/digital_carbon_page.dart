@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'digital_carbon_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -55,26 +58,54 @@ class DataUsagePageState extends State<DataUsagePage>
   }
 
   // 코틀린으로 값 보내기
+  // Future<void> sendDataToKotlin() async {
+  //   try {
+  //     accessToken = await _secureStorage.read(key: 'accessToken');
+  //     userId = await _secureStorage.read(key: 'userId');
+  //     deviceId = await _secureStorage.read(key: 'deviceId');
+  //
+  //     if (accessToken != null && userId != null && deviceId != null) {
+  //       await platform.invokeMethod('sendData', {
+  //         'access_token': accessToken,
+  //         'device_id': deviceId,
+  //         'user_id': userId,
+  //       });
+  //     } else {
+  //       setState(() {
+  //         message = "Failed to retrieve data from secure storage.";
+  //       });
+  //     }
+  //
+  //   } on PlatformException catch (e) {
+  //     print("Failed to send data: '${e.message}'.");
+  //   }
+  // }
+
   Future<void> sendDataToKotlin() async {
     try {
+      // Secure Storage에서 데이터 읽기
       accessToken = await _secureStorage.read(key: 'accessToken');
       userId = await _secureStorage.read(key: 'userId');
       deviceId = await _secureStorage.read(key: 'deviceId');
 
       if (accessToken != null && userId != null && deviceId != null) {
-        await platform.invokeMethod('sendData', {
-          'access_token': accessToken,
-          'device_id': deviceId,
-          'user_id': userId,
-        });
-      } else {
-        setState(() {
-          message = "Failed to retrieve data from secure storage.";
-        });
-      }
+        // 데이터를 Flutter의 SharedPreferences에 저장
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('accessToken', accessToken!);
+        await prefs.setString('userId', userId!);
+        await prefs.setString('deviceId', deviceId!);
 
-    } on PlatformException catch (e) {
-      print("Failed to send data: '${e.message}'.");
+        print("Data stored in Flutter's SharedPreferences:");
+        print("accessToken: $accessToken");
+        print("userId: $userId");
+        print("deviceId: $deviceId");
+
+        await platform.invokeMethod('sendData');
+      } else {
+        print("Failed to retrieve data from secure storage.");
+      }
+    } catch (e) {
+      print("Failed to process data: ${e.toString()}");
     }
   }
 
