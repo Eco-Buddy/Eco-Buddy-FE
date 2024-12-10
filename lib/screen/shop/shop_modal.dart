@@ -96,6 +96,27 @@ class _ShopModalState extends State<ShopModal> with TickerProviderStateMixin {
 
   Future<void> _purchaseItem(int itemId, int price) async {
     final petProvider = Provider.of<PetProvider>(context, listen: false);
+
+    if (userPoints < price) {
+      // AlertDialog로 메시지 표시
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('구매 불가'),
+            content: Text('포인트가 부족하여 구매할 수 없습니다.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(), // 닫기 버튼
+                child: Text('확인'),
+              ),
+            ],
+          );
+        },
+      );
+      return; // 조건을 만족하지 못하면 구매 프로세스 종료
+    }
+
     try {
       final success = await petProvider.purchaseItem(itemId);
       if (success) {
