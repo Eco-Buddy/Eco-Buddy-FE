@@ -34,20 +34,29 @@ class CharacterProvider with ChangeNotifier {
       stopWalking();  // Stop walking if sad
     }
     notifyListeners();
+
+    if (emotion == 'happy') {
+      Future.delayed(const Duration(seconds: 2), () {
+        if (!_isDisposed && character.emotion == 'happy') {
+          // 여전히 happy 상태인 경우에만 normal로 변경
+          updateEmotion('normal');
+        }
+      });
+    }
   }
 
   Future<void> checkCarbonAndSetEmotion() async {
     final carbonTotalString = await secureStorage.read(key: 'carbonTotal');
-    final discountString = await secureStorage.read(key: 'discount');
+    final discountString = await secureStorage.read(key: 'discount') ?? '0';
     if (carbonTotalString != null && discountString != null) {
       final result = double.parse(carbonTotalString) - double.parse(discountString);
-      if (result > 10000) {
+      if (result > 1000) {
         updateEmotion('sad');
       } else {
         updateEmotion('normal');
       }
     } else {
-      print('응 없어');
+      print('응 없어 : $carbonTotalString : $discountString');
     }
   }
 
