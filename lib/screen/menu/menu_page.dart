@@ -445,10 +445,6 @@ class _MenuPageState extends State<MenuPage> {
                   '펫 이름: $petName',
                   style: const TextStyle(fontSize: 16),
                 ),
-                Text(
-                  '레벨: $petLevel',
-                  style: const TextStyle(fontSize: 16),
-                ),
               ],
             ),
           ],
