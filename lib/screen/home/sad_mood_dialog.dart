@@ -53,7 +53,7 @@ class SadMoodDialog extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
           ),
           child: Container(
-            width: MediaQuery.of(context).size.width * 0.5, // 화면 너비의 80%로 제한
+            width: MediaQuery.of(context).size.width * 0.8, // 화면 너비의 80%로 제한
             padding: EdgeInsets.all(20),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
@@ -64,7 +64,7 @@ class SadMoodDialog extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "펫의 기분이 나쁩니다!",
+                  "펫이 우울해합니다",
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -94,7 +94,11 @@ class SadMoodDialog extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: Text("미션 수행"),
+                      child: Text("미션 수행",
+                        style: TextStyle(
+                          color: Colors.green, // 원하는 색상으로 변경
+                          fontWeight: FontWeight.bold, // 텍스트 굵기 (선택 사항)
+                        ),),
                     ),
                     ElevatedButton(
                       onPressed: isAffordable
@@ -117,7 +121,11 @@ class SadMoodDialog extends StatelessWidget {
                             height: 24,
                           ),
                           SizedBox(width: 8),
-                          Text(isAffordable ? "-$coinCost" : "포인트 부족"),
+                          Text(isAffordable ? "-$coinCost" : "포인트 부족",
+                            style: TextStyle(
+                            color: Colors.white, // 원하는 색상으로 변경
+                            fontWeight: FontWeight.bold, // 텍스트 굵기 (선택 사항)
+                          ),),
                         ],
                       ),
                     ),

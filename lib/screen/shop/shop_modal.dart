@@ -311,6 +311,13 @@ class _ShopModalState extends State<ShopModal> with TickerProviderStateMixin {
                   const SizedBox(height: 16.0),
                   ElevatedButton(
                     onPressed: () => Navigator.pop(context, userPoints), // 포인트 반환
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: Colors.grey[100], // 배경색 설정
+                      foregroundColor: Colors.red, // 텍스트 색상
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12), // 버튼 모서리 둥글게
+                      ),
+                    ),
                     child: const Text('닫기'),
                   ),
                   const SizedBox(height: 16.0),
@@ -381,6 +388,12 @@ class _ShopModalState extends State<ShopModal> with TickerProviderStateMixin {
                 )
                     : ElevatedButton(
                   onPressed: () => _purchaseItem(itemId, price),
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: Colors.grey[100], // 배경색 설정
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15), // 버튼 모서리 둥글게
+                    ),
+                  ),
                   child: const Text('구매하기'),
                 ),
                 const SizedBox(height: 12.0),

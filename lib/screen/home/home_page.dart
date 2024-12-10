@@ -10,10 +10,9 @@ import '../shop/custom_modal.dart';
 import './mission_dialog.dart';
 import './quest_dialog.dart';
 import 'character_provider.dart';
-import 'quest_dialog.dart';  // 퀘스트 다이얼로그
-import 'package:intl/intl.dart'; // 시간을 비교하고 포맷을 지정하기 위한 라이브러리
 import 'package:login_test/screen/home/sad_mood_dialog.dart';  // 임포트 추가
 import 'pet_mission_dialog.dart'; // PetMissionDialog를 import
+import 'dart:async'; // StreamSubscription 사용을 위해 추가
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -34,7 +33,9 @@ class _HomePageState extends State<HomePage> {
   int userPoints = 0; // 홈 페이지에서 관리할 포인트
   String _emotionText = ''; // 감정을 저장할 텍스트
   bool _showTrash = false; // 쓰레기 아이콘을 보일지 여부
-  static const _missionCooldown = Duration(seconds: 5); // 미션 쿨다운 시간 (30분)
+  static const _missionCooldown = Duration(hours: 6); // 미션 쿨다운 시간
+  StreamSubscription? _cooldownSubscription; // 스트림 구독 관리
+  Timer? _cooldownTimer;
 
   @override
   void initState() {
@@ -48,6 +49,16 @@ class _HomePageState extends State<HomePage> {
       characterProvider.updateEmotion('normal');
       characterProvider.startWalking(context);
     });
+
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      _checkTrashCooldown();
+    });
+  }
+
+  @override
+  void dispose() {
+    _cooldownTimer?.cancel(); // 타이머 정지
+    super.dispose();
   }
 
   Future<void> _updatePetPoints() async {
@@ -62,32 +73,36 @@ class _HomePageState extends State<HomePage> {
   Future<void> _checkTrashCooldown() async {
     try {
       final lastMissionTimeString = await secureStorage.read(key: 'lastMissionTime');
-      print('lastMissionTimeString: $lastMissionTimeString'); // 디버깅 로그
-
       if (lastMissionTimeString != null) {
         final lastMissionTime = DateTime.parse(lastMissionTimeString);
         final currentTime = DateTime.now();
         final timeDifference = currentTime.difference(lastMissionTime);
 
-        print('Time difference: $timeDifference'); // 디버깅 로그
-
         if (timeDifference >= _missionCooldown) {
-          setState(() {
-            _showTrash = true;
-          });
+          if (mounted) {
+            setState(() {
+              _showTrash = true; // 쿨다운 시간이 지났으면 쓰레기 표시
+            });
+          }
         } else {
-          print('Cooldown not over yet');
+          if (mounted) {
+            setState(() {
+              _showTrash = false; // 쿨다운 중이면 쓰레기 숨김
+            });
+          }
         }
       } else {
-        print('No lastMissionTime found, showing trash for the first time');
-        setState(() {
-          _showTrash = true; // 처음 실행 시 쓰레기 표시
-        });
+        if (mounted) {
+          setState(() {
+            _showTrash = true; // 처음 실행 시 쓰레기 표시
+          });
+        }
       }
     } catch (e) {
       print('Error in _checkTrashCooldown: $e');
     }
   }
+
 
 
   Future<void> _onMissionComplete(int reward) async {
@@ -104,9 +119,11 @@ class _HomePageState extends State<HomePage> {
       await secureStorage.write(key: 'lastMissionTime', value: currentTime.toIso8601String());
 
       // 쓰레기 아이콘 숨기기
-      setState(() {
-        _showTrash = false;
-      });
+      if (mounted) {
+        setState(() {
+          _showTrash = false; // 미션 완료 시 쓰레기 숨김
+        });
+      }
     } catch (e) {
       print('Error in _onMissionComplete: $e');
     }
@@ -237,44 +254,42 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildTrash(BuildContext context) {
-    final petProvider = Provider.of<PetProvider>(context);
     return Positioned(
       bottom: 120,
       left: MediaQueryData.fromWindow(WidgetsBinding.instance.window).size.width * 4 / 5,
-      child: GestureDetector(
-        onTap: () async {
-          final missions = await _loadMissionsJson();
-          if (missions.isNotEmpty) {
-            final mission = (missions..shuffle()).first; // 랜덤 미션
-            showDialog(
-              context: context,
-              builder: (context) {
-                return MissionDialog(
-                  title: mission['title'],
-                  missionRequest: mission['request'],
-                  missionContent: "보상: ${mission['reward']} 포인트",
-                  missionDescription: mission['description'],
-                  onComplete: () async {
-                    Navigator.pop(context);
-
-                    // 포인트 갱신
-                    final updatedPoints = petProvider.petPoints + (mission['reward'] as int);
-                    print("미션 완료: ${mission['reward']} 포인트 추가, 총 포인트: $updatedPoints");
-                    await _onMissionComplete(mission['reward'] as int); // 미션 완료 처리
-                  },
-
-                  onLater: () {
-                    Navigator.pop(context);
-                  },
-                );
-              },
-            );
-          }
-        },
-        child: Image.asset(
-          'assets/images/trash/trash_1.png', // 쓰레기 이미지 경로
-          width: 50,
-          height: 50,
+      child: Visibility(
+        visible: _showTrash, // _showTrash 값에 따라 표시 여부 결정
+        child: GestureDetector(
+          onTap: () async {
+            // 쓰레기 클릭 시 로직
+            final missions = await _loadMissionsJson();
+            if (missions.isNotEmpty) {
+              final mission = (missions..shuffle()).first; // 랜덤 미션
+              showDialog(
+                context: context,
+                builder: (context) {
+                  return MissionDialog(
+                    title: mission['title'],
+                    missionRequest: mission['request'],
+                    missionContent: "보상: ${mission['reward']} 포인트",
+                    missionDescription: mission['description'],
+                    onComplete: () async {
+                      Navigator.pop(context);
+                      await _onMissionComplete(mission['reward'] as int);
+                    },
+                    onLater: () {
+                      Navigator.pop(context);
+                    },
+                  );
+                },
+              );
+            }
+          },
+          child: Image.asset(
+            'assets/images/trash/trash_1.png',
+            width: 50,
+            height: 50,
+          ),
         ),
       ),
     );

@@ -147,11 +147,18 @@ class _QuestDialogState extends State<QuestDialog> {
               Navigator.of(context).pop();
               _refreshPoints();
             },
+            style: OutlinedButton.styleFrom(
+              backgroundColor: Colors.grey[100], // 배경색 설정
+              foregroundColor: Colors.red, // 텍스트 색상
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12), // 버튼 모서리 둥글게
+              ),
+            ),
             child: Text(
               '닫기',
               style: TextStyle(color: Colors.red),
             ),
-          )
+          ),
         ],
       ),
     );
