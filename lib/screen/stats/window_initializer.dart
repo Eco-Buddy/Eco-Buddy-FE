@@ -182,13 +182,13 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:02 /f
   }
 
   // Helper function to handle counter resets
-  int calculateDailyDelta({required int currentValue, required int previousValue,}) {
-    if (currentValue >= previousValue) {
-      // 정상적인 경우
-      return currentValue - previousValue;
-    } else {
-      // 재부팅된 경우: 현재 값을 반환
+  int calculateDailyDelta({required int currentValue, required int previousValue, required bool isAccumulatingToday,}) {
+    if (isAccumulatingToday) {
+      // 재부팅 후 누적 계산 중인 경우: 현재 값만 반환
       return currentValue;
+    } else {
+      // 정상적인 경우: 현재 값에서 이전 값을 뺀다
+      return currentValue - previousValue;
     }
   }
 
@@ -233,29 +233,33 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:02 /f
       while (lastDate.isBefore(DateTime.now())) {
         final missedDate = lastDate.toIso8601String().split('T')[0];
 
+        // 재부팅 여부 감지 및 플래그 설정
+        if (currentTotals['ethernetInOctets']! < lastTotals['ethernetInOctets']! ||
+            currentTotals['wifiInOctets']! < lastTotals['wifiInOctets']!) {
+          isAccumulatingToday = true;
+        }
+
         if (missedDate == lastSavedDate) {
           // 오늘 데이터 저장
           int ethernetUsage = calculateDailyDelta(
             currentValue: currentTotals['ethernetInOctets'] ?? 0,
             previousValue: lastTotals['ethernetInOctets'] ?? 0,
+            isAccumulatingToday: isAccumulatingToday,
           ) + calculateDailyDelta(
             currentValue: currentTotals['ethernetOutOctets'] ?? 0,
             previousValue: lastTotals['ethernetOutOctets'] ?? 0,
+            isAccumulatingToday: isAccumulatingToday,
           );
 
           int wifiUsage = calculateDailyDelta(
             currentValue: currentTotals['wifiInOctets'] ?? 0,
             previousValue: lastTotals['wifiInOctets'] ?? 0,
+            isAccumulatingToday: isAccumulatingToday,
           ) + calculateDailyDelta(
             currentValue: currentTotals['wifiOutOctets'] ?? 0,
             previousValue: lastTotals['wifiOutOctets'] ?? 0,
+            isAccumulatingToday: isAccumulatingToday,
           );
-
-          // 재부팅 여부 감지 및 플래그 설정
-          if (currentTotals['ethernetInOctets']! < lastTotals['ethernetInOctets']! ||
-              currentTotals['wifiInOctets']! < lastTotals['wifiInOctets']!) {
-            isAccumulatingToday = true;
-          }
 
           weeklyData[today] = {'ethernet': ethernetUsage, 'wifi': wifiUsage}; // 올바른 값 저장
         } else {
@@ -276,29 +280,33 @@ schtasks /create /tn "$taskName" /tr "$exePath" /sc hourly /st 00:02 /f
       return;
     }
 
-    // Case 3: Calculate real-time usage for today
-    final realTimeUsage = {
-      'ethernet': calculateDailyDelta(
-        currentValue: currentTotals['ethernetInOctets'] ?? 0,
-        previousValue: lastTotals['ethernetInOctets'] ?? 0,
-      ) + calculateDailyDelta(
-        currentValue: currentTotals['ethernetOutOctets'] ?? 0,
-        previousValue: lastTotals['ethernetOutOctets'] ?? 0,
-      ),
-      'wifi': calculateDailyDelta(
-        currentValue: currentTotals['wifiInOctets'] ?? 0,
-        previousValue: lastTotals['wifiInOctets'] ?? 0,
-      ) + calculateDailyDelta(
-        currentValue: currentTotals['wifiOutOctets'] ?? 0,
-        previousValue: lastTotals['wifiOutOctets'] ?? 0,
-      ),
-    };
-
     // 실시간에서 재부팅 감지 및 플래그 설정
     if (currentTotals['ethernetInOctets']! < lastTotals['ethernetInOctets']! ||
         currentTotals['wifiInOctets']! < lastTotals['wifiInOctets']!) {
       isAccumulatingToday = true;
     }
+
+    // Case 3: Calculate real-time usage for today
+    final realTimeUsage = {
+      'ethernet': calculateDailyDelta(
+        currentValue: currentTotals['ethernetInOctets'] ?? 0,
+        previousValue: lastTotals['ethernetInOctets'] ?? 0,
+        isAccumulatingToday: isAccumulatingToday,
+      ) + calculateDailyDelta(
+        currentValue: currentTotals['ethernetOutOctets'] ?? 0,
+        previousValue: lastTotals['ethernetOutOctets'] ?? 0,
+        isAccumulatingToday: isAccumulatingToday,
+      ),
+      'wifi': calculateDailyDelta(
+        currentValue: currentTotals['wifiInOctets'] ?? 0,
+        previousValue: lastTotals['wifiInOctets'] ?? 0,
+        isAccumulatingToday: isAccumulatingToday,
+      ) + calculateDailyDelta(
+        currentValue: currentTotals['wifiOutOctets'] ?? 0,
+        previousValue: lastTotals['wifiOutOctets'] ?? 0,
+        isAccumulatingToday: isAccumulatingToday,
+      ),
+    };
 
     await saveDailyUsage(today, realTimeUsage);
     final ethernetUsageMB = realTimeUsage['ethernet']! / (1024 * 1024);
