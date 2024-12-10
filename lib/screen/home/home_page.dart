@@ -46,7 +46,7 @@ class _HomePageState extends State<HomePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final characterProvider = Provider.of<CharacterProvider>(context, listen: false);
       // Secure Storage에서 carbonTotal과 discount를 읽음
-      characterProvider.updateEmotion('normal');
+      //characterProvider.updateEmotion('normal');
       characterProvider.startWalking(context);
     });
 
@@ -438,8 +438,6 @@ class _HomePageState extends State<HomePage> {
       left: characterProvider.character.position.dx,
       child: GestureDetector(
         onTap: () {
-          print('현재 감정: ${characterProvider.getCurrentEmotion()}'); // 클릭 시 로그 확인
-          characterProvider.checkCarbonAndSetEmotion();
           if (characterProvider.getCurrentEmotion() == 'sad') {
             showDialog(
               context: context,
@@ -512,6 +510,11 @@ class _HomePageState extends State<HomePage> {
                 );
               },
             );
+          }
+          else{
+            characterProvider.updateEmotion('happy');
+            print('현재 감정: ${characterProvider.getCurrentEmotion()}'); // 클릭 시 로그 확인
+            characterProvider.checkCarbonAndSetEmotion();
           }
         },
         child: Transform(

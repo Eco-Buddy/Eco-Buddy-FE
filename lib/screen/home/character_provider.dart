@@ -15,6 +15,7 @@ class CharacterProvider with ChangeNotifier {
   bool _movingRight = true; // 초기 방향: 오른쪽
   final Random _random = Random();
   final secureStorage = const FlutterSecureStorage(); // Secure Storage 인스턴스
+  bool isHappy = false;
 
   bool _isDisposed = false; // dispose 상태 추적용 변수
 
@@ -30,22 +31,25 @@ class CharacterProvider with ChangeNotifier {
 
   void updateEmotion(String emotion) {
     character.updateEmotion(emotion);
-    if (emotion == 'sad') {
-      stopWalking();  // Stop walking if sad
-    }
-    notifyListeners();
+    character.currentImage = _getStaticImageForEmotion(emotion); // 강제로 이미지 갱신
+    notifyListeners(); // 상태를 즉시 반영
 
     if (emotion == 'happy') {
+      isHappy = true;
       Future.delayed(const Duration(seconds: 2), () {
         if (!_isDisposed && character.emotion == 'happy') {
-          // 여전히 happy 상태인 경우에만 normal로 변경
           updateEmotion('normal');
+          isHappy = false;
         }
       });
+    } else if (emotion == 'sad') {
+      isHappy = false;
+      stopWalking();
     }
   }
 
   Future<void> checkCarbonAndSetEmotion() async {
+    if (isHappy) return;
     final carbonTotalString = await secureStorage.read(key: 'carbonTotal');
     final discountString = await secureStorage.read(key: 'discount') ?? '0';
     print("$carbonTotalString | $discountString");
@@ -54,8 +58,10 @@ class CharacterProvider with ChangeNotifier {
       int tmp = 10000;
       if (result > tmp) {
         updateEmotion('sad');
+        isHappy = false;
       } else {
         updateEmotion('normal');
+        isHappy = false;
       }
     } else {
       print('응 없어 : $carbonTotalString : $discountString');
@@ -136,9 +142,9 @@ class CharacterProvider with ChangeNotifier {
   }
 
   void stopWalking() {
-    //_walkTimer?.cancel();
-    //character.isWalking = false;
-    //character.currentImage = _getStaticImageForEmotion(character.emotion);
+    _walkTimer?.cancel();
+    character.isWalking = false;
+    character.currentImage = _getStaticImageForEmotion(character.emotion);
     notifyListeners();
   }
 }
