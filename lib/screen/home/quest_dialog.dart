@@ -81,63 +81,82 @@ class _QuestDialogState extends State<QuestDialog> {
   }
 
   Widget _buildQuestionContent() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(16.0),
-          decoration: BoxDecoration(
-            color: Colors.green,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(16),
-              topRight: Radius.circular(16),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white, // 배경 흰색
+        borderRadius: BorderRadius.all(Radius.circular(16)), // 모서리 둥글게
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              color: Colors.green,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
             ),
-          ),
-          child: Center(
-            child: Text(
-              'Quiz',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+            child: Center(
+              child: Text(
+                'Quiz',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text(
-            _currentQuest!['question'],
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.black,
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              _currentQuest!['question'],
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.black,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
           ),
-        ),
-        ...List.generate(4, (index) {
-          String hintKey = 'hint${index + 1}';
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 16.0),
-            child: ElevatedButton(
-              onPressed: () => _checkAnswer(_currentQuest![hintKey]),
-              child: Text(_currentQuest![hintKey]),
+          ...List.generate(4, (index) {
+            String hintKey = 'hint${index + 1}';
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 16.0),
+              child: ElevatedButton(
+                onPressed: () => _checkAnswer(_currentQuest![hintKey]),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(200, 50), // 버튼 크기 고정
+                  backgroundColor: Colors.white, // 배경색 흰색
+                  side: const BorderSide(color: Colors.grey, width: 3.0), // 회색 테두리
+                  textStyle: const TextStyle(fontSize: 16), // 텍스트 크기 지정
+                ),
+                child: Center(
+                  child: Text(
+                    _currentQuest![hintKey],
+                    textAlign: TextAlign.center, // 중앙 정렬
+                    style: const TextStyle(color: Colors.black), // 텍스트 색상을 검은색으로 수정
+                  ),
+                ),
+              ),
+            );
+          }),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _refreshPoints();
+            },
+            child: Text(
+              '닫기',
+              style: TextStyle(color: Colors.red),
             ),
-          );
-        }),
-        TextButton(
-          onPressed: () {
-            Navigator.of(context).pop();
-            _refreshPoints();
-          },
-          child: Text(
-            '닫기',
-            style: TextStyle(color: Colors.red),
-          ),
-        )
-      ],
+          )
+        ],
+      ),
     );
   }
+
 
   Widget _buildResultContent() {
     return Column(
