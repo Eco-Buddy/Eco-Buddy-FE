@@ -58,7 +58,7 @@ class _MenuPageState extends State<MenuPage> {
       // 모든 키-값 쌍을 가져옵니다.
       Map<String, String> allData = await secureStorage.readAll();
       // 제외할 키 목록
-      List<String> keysToKeep = ['carbonTotal', 'discount'];
+      List<String> keysToKeep = ['carbonTotal', 'discount', 'lastMissionTime'];
       // 제외할 키 목록에 포함되지 않는 항목들을 삭제
       for (var key in allData.keys) {
         if (!keysToKeep.contains(key)) {

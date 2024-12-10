@@ -133,7 +133,7 @@ class PetProvider with ChangeNotifier {
       // 모든 키-값 쌍을 가져옵니다.
       Map<String, String> allData = await secureStorage.readAll();
       // 제외할 키 목록
-      List<String> keysToKeep = ['carbonTotal', 'discount'];
+      List<String> keysToKeep = ['carbonTotal', 'discount', 'lastMissionTime'];
       // 제외할 키 목록에 포함되지 않는 항목들을 삭제
       for (var key in allData.keys) {
         if (!keysToKeep.contains(key)) {
@@ -432,7 +432,6 @@ class PetProvider with ChangeNotifier {
     } catch (e) {
       print('❌ Secure Storage 데이터를 출력하는 중 오류 발생: $e');
     }
-    await secureStorage.write(key:'discount', value: '0');
   }
 
   Future<Map<String, dynamic>> fetchItemsByRange(int range) async {

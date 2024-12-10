@@ -51,6 +51,7 @@ class CharacterProvider with ChangeNotifier {
   Future<void> checkCarbonAndSetEmotion() async {
     if (isHappy) return;
     final carbonTotalString = await secureStorage.read(key: 'carbonTotal');
+
     final discountString = await secureStorage.read(key: 'discount') ?? '0';
     print("$carbonTotalString | $discountString");
     if (carbonTotalString != null && discountString != null) {
