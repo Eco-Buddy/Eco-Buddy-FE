@@ -136,9 +136,9 @@ class CharacterProvider with ChangeNotifier {
   }
 
   void stopWalking() {
-    _walkTimer?.cancel();
-    character.isWalking = false;
-    character.currentImage = _getStaticImageForEmotion(character.emotion);
+    //_walkTimer?.cancel();
+    //character.isWalking = false;
+    //character.currentImage = _getStaticImageForEmotion(character.emotion);
     notifyListeners();
   }
 }
