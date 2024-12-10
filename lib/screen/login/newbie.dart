@@ -34,25 +34,30 @@ class _NewbiePageState extends State<NewbiePage> {
 
   Future<void> _createPet() async {
     final petName = _petNameController.text.trim();
+
+    // 유효성 검증
     if (petName.isEmpty) {
       setState(() {
         _errorMessage = '펫 이름을 입력해주세요!';
       });
-      return;
-    }
-    else if (_containsSpecialCharacters(petName)) {
+      return; // 유효성 검증 실패 시 함수 종료
+    } else if (_containsSpecialCharacters(petName)) {
       setState(() {
         _errorMessage = '특수 문자는 사용할 수 없습니다!';
       });
-      return;
-    }
-    else {
+      return; // 유효성 검증 실패 시 함수 종료
+    } else if (petName.length > 10) {
       setState(() {
-        _errorMessage = null;
+        _errorMessage = '펫 이름은 최대 10자 이내여야 합니다!';
+      });
+      return; // 유효성 검증 실패 시 함수 종료
+    } else {
+      setState(() {
+        _errorMessage = null; // 오류 없음
       });
     }
 
-    // Retrieve access token and other required headers from secure storage
+    // 유효성 검증 성공 시에만 다음 단계 진행
     final accessToken = await _secureStorage.read(key: 'accessToken');
     final deviceId = await _secureStorage.read(key: 'deviceId');
     final userId = await _secureStorage.read(key: 'userId');
@@ -61,19 +66,18 @@ class _NewbiePageState extends State<NewbiePage> {
       print('❌ 인증 정보가 부족합니다. 시작화면으로 돌아갈게요.');
       showDialog(
         context: context,
-        barrierDismissible: false,  // 사용자가 다이얼로그 바깥을 눌러도 닫히지 않도록 설정
+        barrierDismissible: false,
         builder: (context) {
           return AlertDialog(
-            title: Text('인증 오류'),
-            content: Text('❌ 인증 정보가 부족합니다. 시작화면으로 돌아갈게요.'),
+            title: const Text('인증 오류'),
+            content: const Text('❌ 인증 정보가 부족합니다. 시작화면으로 돌아갈게요.'),
             actions: <Widget>[
               TextButton(
                 onPressed: () {
-                  // 3. 다이얼로그 닫고 시작 화면으로 이동
-                  Navigator.of(context).pop();  // 다이얼로그 닫기
+                  Navigator.of(context).pop();
                   Navigator.pushNamedAndRemoveUntil(context, '/start', (route) => false);
                 },
-                child: Text('확인'),
+                child: const Text('확인'),
               ),
             ],
           );
@@ -83,7 +87,7 @@ class _NewbiePageState extends State<NewbiePage> {
     }
 
     try {
-      // Send POST request to create the pet
+      // 펫 생성 요청 전송
       final response = await http.post(
         Uri.parse('http://ecobuddy.kro.kr:4525/pet/create?petName=$petName'),
         headers: {
@@ -94,7 +98,6 @@ class _NewbiePageState extends State<NewbiePage> {
       );
 
       if (response.statusCode == 200) {
-        // Parse response and save the new access token
         final responseData = jsonDecode(response.body);
         if (responseData['new_accessToken'] != null) {
           await _secureStorage.write(
@@ -102,20 +105,25 @@ class _NewbiePageState extends State<NewbiePage> {
             value: responseData['new_accessToken'],
           );
 
-          // 코틀린 문제 해결
           await TokenManager.updateCredentials();
 
           print('✅ 새로운 펫 생성 성공 및 액세스 토큰 업데이트 완료!');
-
+          await _secureStorage.write(key:'Make', value: '1');
           Navigator.pushReplacementNamed(context, '/main');
         } else {
           print('⚠️ 새로운 액세스 토큰이 응답에 없습니다.');
         }
       } else {
+        setState(() {
+          _errorMessage = '펫 생성 중 오류가 발생했습니다. (${response.statusCode})';
+        });
         print('❌ 펫 생성 실패: ${response.statusCode}');
         print('❌ 응답 내용: ${response.body}');
       }
     } catch (e) {
+      setState(() {
+        _errorMessage = '펫 생성 중 오류가 발생했습니다.';
+      });
       print('❌ 펫 생성 중 오류 발생: $e');
     }
   }

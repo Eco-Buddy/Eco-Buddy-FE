@@ -80,8 +80,10 @@ class SadMoodDialog extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  spacing: 16, // 버튼 간 가로 간격
+                  runSpacing: 10, // 버튼 간 세로 간격
+                  alignment: WrapAlignment.center, // 버튼을 중앙에 정렬
                   children: [
                     OutlinedButton(
                       onPressed: () {
@@ -94,11 +96,13 @@ class SadMoodDialog extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: Text("미션 수행",
+                      child: Text(
+                        "미션 수행",
                         style: TextStyle(
                           color: Colors.green, // 원하는 색상으로 변경
                           fontWeight: FontWeight.bold, // 텍스트 굵기 (선택 사항)
-                        ),),
+                        ),
+                      ),
                     ),
                     ElevatedButton(
                       onPressed: isAffordable
@@ -114,6 +118,7 @@ class SadMoodDialog extends StatelessWidget {
                         ),
                       ),
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Image.asset(
                             'assets/images/icon/leaf_token.png',
@@ -121,11 +126,13 @@ class SadMoodDialog extends StatelessWidget {
                             height: 24,
                           ),
                           SizedBox(width: 8),
-                          Text(isAffordable ? "-$coinCost" : "포인트 부족",
+                          Text(
+                            isAffordable ? "-$coinCost" : "포인트 부족",
                             style: TextStyle(
-                            color: Colors.white, // 원하는 색상으로 변경
-                            fontWeight: FontWeight.bold, // 텍스트 굵기 (선택 사항)
-                          ),),
+                              color: Colors.white, // 원하는 색상으로 변경
+                              fontWeight: FontWeight.bold, // 텍스트 굵기 (선택 사항)
+                            ),
+                          ),
                         ],
                       ),
                     ),

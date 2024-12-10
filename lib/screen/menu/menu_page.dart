@@ -186,65 +186,89 @@ class _MenuPageState extends State<MenuPage> {
 
   // MenuPage에서 펫 이름 수정하기
   Future<void> _editPetName(BuildContext context) async {
-    // TextEditingController 사용
     TextEditingController petNameController = TextEditingController();
+    String? errorMessage; // 오류 메시지 상태 관리
+    final formKey = GlobalKey<FormState>();
 
-    String? newPetName = await showDialog<String>(
+    await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('펫 이름 수정'),
-        content: TextField(
-          controller: petNameController, // 컨트롤러로 값 관리
-          decoration: const InputDecoration(
-            hintText: '새로운 펫 이름을 입력하세요',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              // 다이얼로그 닫을 때 입력된 값 반환
-              Navigator.pop(context, petNameController.text);
-            },
-            child: const Text('확인'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context), // 취소시 다이얼로그 닫기
-            child: const Text('취소'),
-          ),
-        ],
-      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('펫 이름 수정'),
+              content: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: petNameController,
+                      maxLength: 10,
+                      decoration: InputDecoration(
+                        hintText: '새로운 펫 이름을 입력하세요',
+                        counterText: '', // 글자 수 카운터 제거
+                        errorText: errorMessage, // 오류 메시지 표시
+                      ),
+                      onChanged: (value) {
+                        // 입력 값 변경 시 유효성 검증
+                        setState(() {
+                          if (value.trim().isEmpty) {
+                            errorMessage = '비워둘 수 없습니다.';
+                          } else if (_containsSpecialCharacters(value)) {
+                            errorMessage = '특수 문자는 사용할 수 없습니다.';
+                          } else if (value.length > 10) {
+                            errorMessage = '펫 이름은 최대 10자 이내여야 합니다.';
+                          } else {
+                            errorMessage = null; // 오류 없음
+                          }
+                        });
+                      },
+                    ),
+                    // if (errorMessage != null)
+                    //   Text(
+                    //     errorMessage!,
+                    //     style: const TextStyle(color: Colors.red, fontSize: 12),
+                    //   ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    if (errorMessage == null && petNameController.text.trim().isNotEmpty) {
+                      Navigator.pop(context, petNameController.text);
+                    } else {
+                      setState(() {
+                        errorMessage = '유효한 이름을 입력하세요.';
+                      });
+                    }
+                  },
+                  child: const Text('확인'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context), // 다이얼로그 닫기
+                  child: const Text('취소'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
 
-    newPetName = newPetName?.trim();
+    String? newPetName = petNameController.text.trim();
 
-    if(newPetName!.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('펫 이름을 비워둘 수는 없습니다!')),
-      );
-    }
-    else if (_containsSpecialCharacters(newPetName)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('특수 문자는 사용할 수 없습니다!')),
-      );
-    }
-    else {
-      print('새로운 펫 이름: $newPetName');
-      // 펫 이름을 업데이트하는 메서드 호출
-      await Provider.of<PetProvider>(context, listen: false).updatePetName(newPetName!);
-      // 로컬 스토리지에 업데이트된 펫 이름 저장
-      // final petDataString = await _secureStorage.read(key: 'petData');
-      // if (petDataString != null) {
-      //   final petData = jsonDecode(petDataString);
-      //   petData['petName'] = newPetName;
-      //   await _secureStorage.write(key: 'petData', value: jsonEncode(petData));
-      // }
-      // 성공적으로 업데이트 되었으면 UI도 갱신할 수 있습니다.
+    if (newPetName.isNotEmpty && errorMessage == null) {
+      await Provider.of<PetProvider>(context, listen: false).updatePetName(newPetName);
+
       setState(() {}); // UI 업데이트
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('펫 이름이 업데이트되었습니다: $newPetName')),
       );
     }
   }
+
 
   Future<Map<String, dynamic>> _loadUserData() async {
     final profileImage = await _secureStorage.read(key: 'profileImage') ?? '';

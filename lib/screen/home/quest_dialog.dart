@@ -63,28 +63,40 @@ class _QuestDialogState extends State<QuestDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final petProvider = Provider.of<PetProvider>(context);
+
     return Dialog(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(16),
-          topRight: Radius.circular(16),
-          bottomLeft: Radius.circular(16),
-          bottomRight: Radius.circular(16),
-        ),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: _currentQuest == null
           ? Center(child: CircularProgressIndicator())
-          : !_showResult
-          ? _buildQuestionContent()
-          : _buildResultContent(),
+          : Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              '남은 미션 수: ${petProvider.pet.mission}',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          !_showResult ? _buildQuestionContent() : _buildResultContent(),
+        ],
+      ),
     );
   }
 
   Widget _buildQuestionContent() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white, // 배경 흰색
-        borderRadius: BorderRadius.all(Radius.circular(16)), // 모서리 둥글게
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -127,16 +139,16 @@ class _QuestDialogState extends State<QuestDialog> {
               child: ElevatedButton(
                 onPressed: () => _checkAnswer(_currentQuest![hintKey]),
                 style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(200, 50), // 버튼 크기 고정
-                  backgroundColor: Colors.white, // 배경색 흰색
-                  side: const BorderSide(color: Colors.grey, width: 3.0), // 회색 테두리
-                  textStyle: const TextStyle(fontSize: 16), // 텍스트 크기 지정
+                  minimumSize: const Size(200, 50),
+                  backgroundColor: Colors.white,
+                  side: const BorderSide(color: Colors.grey, width: 3.0),
+                  textStyle: const TextStyle(fontSize: 16),
                 ),
                 child: Center(
                   child: Text(
                     _currentQuest![hintKey],
-                    textAlign: TextAlign.center, // 중앙 정렬
-                    style: const TextStyle(color: Colors.black), // 텍스트 색상을 검은색으로 수정
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.black),
                   ),
                 ),
               ),
@@ -148,10 +160,10 @@ class _QuestDialogState extends State<QuestDialog> {
               _refreshPoints();
             },
             style: OutlinedButton.styleFrom(
-              backgroundColor: Colors.grey[100], // 배경색 설정
-              foregroundColor: Colors.red, // 텍스트 색상
+              backgroundColor: Colors.grey[100],
+              foregroundColor: Colors.red,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12), // 버튼 모서리 둥글게
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
             child: Text(
@@ -163,7 +175,6 @@ class _QuestDialogState extends State<QuestDialog> {
       ),
     );
   }
-
 
   Widget _buildResultContent() {
     return Column(
@@ -200,7 +211,6 @@ class _QuestDialogState extends State<QuestDialog> {
             textAlign: TextAlign.center,
           ),
         ),
-        // 오답일 경우 정답도 표시
         Text(
           _isCorrect ? '+1000 포인트' : '+100 포인트',
           style: TextStyle(
@@ -226,7 +236,6 @@ class _QuestDialogState extends State<QuestDialog> {
       ],
     );
   }
-
 
   Future<void> _refreshPoints() async {
     final String? points = await _storage.read(key: 'points');

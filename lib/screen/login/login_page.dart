@@ -127,6 +127,7 @@ class _LoginPageState extends State<LoginPage> {
         final data = jsonDecode(response.body);
         if (data['id'] != null && data['access_token'] != null) {
           final isNew = response.headers['isnew'] == "1"; // isNew 값을 가져옴
+
           print('isNew: $isNew');
           await _saveUserData(
             id: data['id'],

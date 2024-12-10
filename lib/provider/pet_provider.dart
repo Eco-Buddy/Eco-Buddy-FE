@@ -230,6 +230,25 @@ class PetProvider with ChangeNotifier {
         }
       } else {
         print('❌ 펫 데이터 로드 실패: ${response.statusCode}');
+        // 알림창 띄우기
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text('펫 데이터 로드 실패'),
+              content: Text('펫 데이터가 존재하지 않아 로그인 화면으로 이동합니다.'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // 알림창 닫기
+                    Navigator.pushReplacementNamed(context, '/login'); // 로그인 화면으로 이동
+                  },
+                  child: Text('확인'),
+                ),
+              ],
+            );
+          },
+        );
       }
     } catch (e) {
       print('❌ 펫 데이터 로드 중 오류 발생: $e');
