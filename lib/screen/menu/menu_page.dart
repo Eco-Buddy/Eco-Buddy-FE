@@ -357,19 +357,25 @@ class _MenuPageState extends State<MenuPage> {
                           builder: (BuildContext context) {
                             return AlertDialog(
                               title: Text("회원탈퇴"),
-                              content: Text("모든 정보가 삭제됩니다. 정말 탈퇴하시겠습니까?"),
+                              content: Text("모든 정보가 삭제됩니다.\n정말 탈퇴하시겠습니까?"),
                               actions: [
                                 TextButton(
                                   onPressed: () {
                                     Navigator.of(context).pop(); // 다이얼로그 닫기
                                   },
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: Colors.black, // 글자 색상 검은색
+                                  ),
                                   child: Text("취소"),
                                 ),
-                                ElevatedButton(
+                                TextButton(
                                   onPressed: () {
                                     Navigator.of(context).pop(); // 다이얼로그 닫기
                                     _withdraw(); // 회원 탈퇴 실행
                                   },
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: Colors.red, // 글자 색상 검은색
+                                  ),
                                   child: Text("확인"),
                                 ),
                               ],
