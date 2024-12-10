@@ -123,6 +123,11 @@ class _StartPageState extends State<StartPage> {
 
     if (response.statusCode == 200) {
       print('🎉기존 계정 확인, 메인 페이지로 이동합니다.');
+      final responseData = jsonDecode(response.body);
+      await _secureStorage.write(
+        key: 'accessToken',
+        value: responseData['new_accessToken'],
+      );
       Navigator.pushReplacementNamed(context, '/main');
     }
     else {
