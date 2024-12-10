@@ -56,7 +56,7 @@ class CharacterProvider with ChangeNotifier {
     print("$carbonTotalString | $discountString");
     if (carbonTotalString != null && discountString != null) {
       final result = double.parse(carbonTotalString) - double.parse(discountString);
-      int tmp = 100;
+      int tmp = 10000;
       if (result > tmp) {
         updateEmotion('sad');
         isHappy = false;
