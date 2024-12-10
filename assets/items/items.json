@@ -9,22 +9,22 @@
     },
     {
       "itemId": 1002,
-      "name": "벽지1",
+      "name": "하늘색 벽지",
       "image": "assets/items/background/background_2.png",
       "price": 700,
       "isPurchased": false
     },
     {
       "itemId": 1003,
-      "name": "벽지2",
-      "image": "assets/items/background/background_1.png",
+      "name": "땡땡이 벽지",
+      "image": "assets/items/background/background_3.png",
       "price": 500,
       "isPurchased": false
     },
     {
       "itemId": 1004,
-      "name": "벽지3",
-      "image": "assets/items/background/background_1.png",
+      "name": "줄무늬 벽지",
+      "image": "assets/items/background/background_4.png",
       "price": 500,
       "isPurchased": false
     }
@@ -39,22 +39,22 @@
     },
     {
       "itemId": 2002,
-      "name": "바닥1",
+      "name": "심플",
       "image": "assets/items/floor/floor_2.png",
       "price": 600,
       "isPurchased": false
     },
     {
       "itemId": 2003,
-      "name": "벽지2",
-      "image": "assets/items/floor/floor_1.png",
+      "name": "체크 바닥",
+      "image": "assets/items/floor/floor_3.png",
       "price": 400,
       "isPurchased": false
     },
     {
       "itemId": 2004,
-      "name": "벽지3",
-      "image": "assets/items/floor/floor_1.png",
+      "name": "나무 바닥",
+      "image": "assets/items/floor/floor_4.png",
       "price": 400,
       "isPurchased": false
     }
