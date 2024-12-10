@@ -156,9 +156,10 @@ class _MainPageState extends State<MainPage> {
           currentIndex: currentIndex,
           onTap: (index) {
             setState(() {
-              if (index == currentIndex && index == 0) {
+              if (index == 0) {
                 // 통계 페이지 클릭 시 새로고침
                 _refreshStatsPage();
+                currentIndex = index;
               } else {
                 currentIndex = index;
               }
