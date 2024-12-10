@@ -48,9 +48,10 @@ class CharacterProvider with ChangeNotifier {
   Future<void> checkCarbonAndSetEmotion() async {
     final carbonTotalString = await secureStorage.read(key: 'carbonTotal');
     final discountString = await secureStorage.read(key: 'discount') ?? '0';
+    print("$carbonTotalString | $discountString");
     if (carbonTotalString != null && discountString != null) {
       final result = double.parse(carbonTotalString) - double.parse(discountString);
-      if (result > 1000) {
+      if (result > 10000) {
         updateEmotion('sad');
       } else {
         updateEmotion('normal');
@@ -62,6 +63,10 @@ class CharacterProvider with ChangeNotifier {
 
   void startWalking(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
+    if (context == null || MediaQuery.maybeOf(context) == null) {
+      print('⚠️ Invalid context: MediaQuery is unavailable.');
+      return;
+    }
     _moveCharacter(screenWidth, steps: 1, speed: 100);
 
     _walkTimer?.cancel();
@@ -135,4 +140,6 @@ class CharacterProvider with ChangeNotifier {
     character.currentImage = _getStaticImageForEmotion(character.emotion);
     notifyListeners();
   }
+
+
 }

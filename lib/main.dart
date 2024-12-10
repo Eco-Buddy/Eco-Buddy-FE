@@ -6,6 +6,7 @@ import 'screen/start/start_page.dart'; // StartPage import
 import 'screen/login/login_page.dart'; // LoginPage import
 import 'screen/login/newbie.dart'; // NewbiePage import
 import 'screen/main/main_page.dart'; // MainPage import
+import 'screen/home/character_provider.dart'; // CharacterProvider import
 
 // 윈도우 관련 API
 import 'package:windows_single_instance/windows_single_instance.dart';
@@ -71,13 +72,21 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<PetProvider>(
-      create: (_) {
-        // PetProvider에 SecureStorage 전달
-        final petProvider = PetProvider(secureStorage: secureStorage, context: context);
-        petProvider.loadPetDataFromServer();
-        return petProvider;
-      },
+    return MultiProvider(
+      providers: [
+        // PetProvider 등록
+        ChangeNotifierProvider<PetProvider>(
+          create: (_) {
+            final petProvider = PetProvider(secureStorage: secureStorage, context: context);
+            petProvider.loadPetDataFromServer();
+            return petProvider;
+          },
+        ),
+        // CharacterProvider 등록
+        ChangeNotifierProvider<CharacterProvider>(
+          create: (_) => CharacterProvider(),
+        ),
+      ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Eco Buddy',

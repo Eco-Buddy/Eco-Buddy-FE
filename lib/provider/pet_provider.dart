@@ -432,6 +432,7 @@ class PetProvider with ChangeNotifier {
     } catch (e) {
       print('❌ Secure Storage 데이터를 출력하는 중 오류 발생: $e');
     }
+    await secureStorage.write(key:'discount', value: '0');
   }
 
   Future<Map<String, dynamic>> fetchItemsByRange(int range) async {

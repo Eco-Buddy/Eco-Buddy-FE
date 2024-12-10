@@ -58,41 +58,6 @@ class _HomePageState extends State<HomePage> {
     print("포인트 변경됨:");
   }
 
-  Future<void> _checkCharacterEmotion() async {
-    if (_characterProvider.getCurrentEmotion() == 'sad') {
-      // 감정이 sad일 때 다이얼로그 띄우기
-      showDialog(
-        context: context,
-        builder: (context) => SadMoodDialog(
-          onQuizSelected: () {
-            // 퀴즈 풀기 선택 시 처리
-            showDialog(
-              context: context,
-              builder: (context) => QuestDialog(),
-            );
-          },
-          onCoinSelected: () async {
-            // 코인 소모하기 선택 시 처리
-            final secureStorage = FlutterSecureStorage();
-            final String? carbonTotal = await secureStorage.read(key: 'carbonTotal');
-            final discount = await secureStorage.read(key: 'discount');
-            if (carbonTotal != null && discount != null) {
-              final result = double.tryParse(carbonTotal) ?? 0.0;
-              final coinCost = (result / 10000).toInt() * 100;  // 코인 계산
-
-              final petProvider = Provider.of<PetProvider>(context, listen: false);
-              if (petProvider.petPoints >= coinCost) {
-                await petProvider.updatePetPoints(petProvider.petPoints - coinCost);
-              } else {
-                print("포인트 부족");
-              }
-            }
-          },
-        ),
-      );
-    }
-  }
-
   Future<void> _checkTrashCooldown() async {
     final lastMissionTimeString = await secureStorage.read(key: 'lastMissionTime');
     if (lastMissionTimeString != null) {
@@ -433,7 +398,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
   Widget _buildCharacter(BuildContext context) {
     final characterProvider = Provider.of<CharacterProvider>(context);
 
@@ -451,32 +415,33 @@ class _HomePageState extends State<HomePage> {
               builder: (context) {
                 return SadMoodDialog(
                   onQuizSelected: () {
-                    // 퀴즈 풀기 선택 시 처리
+                    // 퀴즈 풀기 로직
+                    print('퀴즈');
                     showDialog(
                       context: context,
                       builder: (context) => QuestDialog(),
                     );
                   },
-                  onCoinSelected: () async {
-                    // 코인 소모하기 선택 시 처리
-                    final secureStorage = FlutterSecureStorage();
-                    final String? carbonTotal = await secureStorage.read(
-                        key: 'carbonTotal');
-                    final discount = await secureStorage.read(key: 'discount');
-                    if (carbonTotal != null && discount != null) {
-                      final result = double.tryParse(carbonTotal) ?? 0.0;
-                      final coinCost = (result / 10000).toInt() * 100; // 코인 계산
+                  onCoinSelected: (int coinCost) async {
+                    final petProvider = Provider.of<PetProvider>(context, listen: false);
 
-                      final petProvider = Provider.of<PetProvider>(
-                          context, listen: false);
-                      if (petProvider.petPoints >= coinCost) {
-                        await petProvider.updatePetPoints(petProvider
-                            .petPoints - coinCost);
-                        print("코인 소모: $coinCost, 남은 포인트: ${petProvider
-                            .petPoints - coinCost}");
-                      } else {
-                        print("포인트 부족");
-                      }
+                    if (petProvider.petPoints >= coinCost) {
+                      // 포인트 차감
+                      await petProvider.updatePetPoints(petProvider.petPoints - coinCost);
+
+                      // `carbonTotal` 값을 `discount`에 복사
+                      final secureStorage = FlutterSecureStorage();
+                      final carbonTotalString = await secureStorage.read(key: 'carbonTotal') ?? '0';
+                      await secureStorage.write(key: 'discount', value: carbonTotalString);
+
+                      // 캐릭터 감정을 `happy`로 업데이트
+                      characterProvider.updateEmotion('happy');
+                      characterProvider.startWalking(context);
+                    } else {
+                      // 포인트 부족
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('포인트가 부족합니다.')),
+                      );
                     }
                   },
                 );
