@@ -13,6 +13,7 @@ import 'character_provider.dart';
 import 'quest_dialog.dart';  // 퀘스트 다이얼로그
 import 'package:intl/intl.dart'; // 시간을 비교하고 포맷을 지정하기 위한 라이브러리
 import 'package:login_test/screen/home/sad_mood_dialog.dart';  // 임포트 추가
+import 'pet_mission_dialog.dart'; // PetMissionDialog를 import
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -59,41 +60,56 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _checkTrashCooldown() async {
-    final lastMissionTimeString = await secureStorage.read(key: 'lastMissionTime');
-    if (lastMissionTimeString != null) {
-      print(lastMissionTimeString);
-      final lastMissionTime = DateTime.parse(lastMissionTimeString);
-      final currentTime = DateTime.now();
-      final timeDifference = currentTime.difference(lastMissionTime);
+    try {
+      final lastMissionTimeString = await secureStorage.read(key: 'lastMissionTime');
+      print('lastMissionTimeString: $lastMissionTimeString'); // 디버깅 로그
 
-      if (timeDifference >= _missionCooldown) {
+      if (lastMissionTimeString != null) {
+        final lastMissionTime = DateTime.parse(lastMissionTimeString);
+        final currentTime = DateTime.now();
+        final timeDifference = currentTime.difference(lastMissionTime);
+
+        print('Time difference: $timeDifference'); // 디버깅 로그
+
+        if (timeDifference >= _missionCooldown) {
+          setState(() {
+            _showTrash = true;
+          });
+        } else {
+          print('Cooldown not over yet');
+        }
+      } else {
+        print('No lastMissionTime found, showing trash for the first time');
         setState(() {
-          _showTrash = true; // 일정 시간이 지나면 쓰레기 아이콘을 다시 보이도록 설정
+          _showTrash = true; // 처음 실행 시 쓰레기 표시
         });
       }
-    } else {
-      // lastMissionTime이 null이면 첫 실행이므로, 바로 쓰레기 아이콘을 표시
-      print('null');
-      setState(() {
-        _showTrash = true;
-      });
+    } catch (e) {
+      print('Error in _checkTrashCooldown: $e');
     }
   }
 
+
   Future<void> _onMissionComplete(int reward) async {
-    final petProvider = Provider.of<PetProvider>(context, listen: false);
-    final updatedPoints = petProvider.petPoints + reward;
+    try {
+      final petProvider = Provider.of<PetProvider>(context, listen: false);
+      final updatedPoints = petProvider.petPoints + reward;
 
-    // 포인트 갱신
-    await petProvider.updatePetPoints(updatedPoints);
+      // 포인트 갱신
+      await petProvider.updatePetPoints(updatedPoints);
 
-    // 현재 시간을 secureStorage에 저장 (미션 완료 시간)
-    await secureStorage.write(key: 'lastMissionTime', value: DateTime.now().toIso8601String());
+      // 현재 시간을 저장 (미션 완료 시간)
+      final currentTime = DateTime.now();
+      print('Updating lastMissionTime to: $currentTime'); // 디버깅 로그
+      await secureStorage.write(key: 'lastMissionTime', value: currentTime.toIso8601String());
 
-    // 쓰레기 아이콘을 숨김
-    setState(() {
-      _showTrash = false;
-    });
+      // 쓰레기 아이콘 숨기기
+      setState(() {
+        _showTrash = false;
+      });
+    } catch (e) {
+      print('Error in _onMissionComplete: $e');
+    }
   }
 
   Future<List<dynamic>> _loadMissionsJson() async {
@@ -414,12 +430,46 @@ class _HomePageState extends State<HomePage> {
               context: context,
               builder: (context) {
                 return SadMoodDialog(
-                  onQuizSelected: () {
-                    // 퀴즈 풀기 로직
-                    print('퀴즈');
+                  onMissionSelected: () async {
+                    // _loadMissionsJson 함수 호출하여 미션 데이터 가져오기
+                    final missions = await _loadMissionsJson();
+                    if (missions.isEmpty) {
+                      print('No missions available.');
+                      return;
+                    }
+
+                    // 랜덤으로 하나 선택
+                    final randomMission = (missions..shuffle()).first;
+
+                    // PetMissionDialog 열기
                     showDialog(
                       context: context,
-                      builder: (context) => QuestDialog(),
+                      builder: (context) {
+                        return PetMissionDialog(
+                          title: randomMission['title'] ?? '미션 제목',
+                          missionRequest: randomMission['request'] ?? '미션 요청',
+                          missionContent: randomMission['content'] ?? '미션 내용',
+                          missionDescription: randomMission['description'] ?? '미션 설명',
+                          onComplete: () async {
+                            // 포인트 차감 없이 수행 완료 처리
+                            final secureStorage = FlutterSecureStorage();
+                            final carbonTotalString = await secureStorage.read(key: 'carbonTotal') ?? '0';
+                            await secureStorage.write(key: 'discount', value: carbonTotalString);
+
+                            // 캐릭터 감정을 `happy`로 업데이트
+                            characterProvider.updateEmotion('happy');
+                            characterProvider.startWalking(context);
+
+                            // 다이얼로그 닫기
+                            Navigator.of(context).pop(); // PetMissionDialog 닫기
+                          },
+                          onLater: () {
+                            // 다음에 하기 동작
+                            print('나중에 할게요');
+                            Navigator.of(context).pop(); // PetMissionDialog 닫기
+                          },
+                        );
+                      },
                     );
                   },
                   onCoinSelected: (int coinCost) async {

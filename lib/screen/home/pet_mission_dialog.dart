@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
-class MissionDialog extends StatelessWidget {
-  final String title;
-  final String missionRequest;
-  final String missionContent;
-  final String missionDescription;
-  final VoidCallback onComplete;
-  final VoidCallback onLater;
+class PetMissionDialog extends StatelessWidget {
+  final String title; // 제목
+  final String missionRequest; // 미션 요청 메시지
+  final String missionContent; // 미션 내용
+  final String missionDescription; // 미션 설명
+  final VoidCallback onComplete; // 수행 완료 콜백
+  final VoidCallback onLater; // 나중에 수행 콜백
 
-  const MissionDialog({
+  const PetMissionDialog({
     Key? key,
     required this.title,
     required this.missionRequest,
@@ -32,11 +32,13 @@ class MissionDialog extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 미션 요청 메시지
           Text(
             missionRequest,
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
+          // 미션 내용
           Row(
             children: [
               const Icon(Icons.task_alt, color: Colors.green),
@@ -50,6 +52,7 @@ class MissionDialog extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
+          // 미션 설명
           Text(
             missionDescription,
             style: const TextStyle(fontSize: 12, color: Colors.grey),
@@ -58,6 +61,7 @@ class MissionDialog extends StatelessWidget {
         ],
       ),
       actions: [
+        // '다음에 할게요' 버튼
         TextButton(
           onPressed: onLater,
           child: const Text(
@@ -65,6 +69,7 @@ class MissionDialog extends StatelessWidget {
             style: TextStyle(color: Colors.grey),
           ),
         ),
+        // '수행 완료' 버튼
         ElevatedButton(
           onPressed: onComplete,
           style: ElevatedButton.styleFrom(

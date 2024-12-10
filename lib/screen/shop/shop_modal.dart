@@ -314,10 +314,10 @@ class _ShopModalState extends State<ShopModal> with TickerProviderStateMixin {
                     child: const Text('닫기'),
                   ),
                   const SizedBox(height: 16.0),
-                  ElevatedButton(
-                    onPressed: () => _spendPoints(100),
-                    child: const Text('포인트 소모'),
-                  ),
+                  // ElevatedButton(
+                  //   onPressed: () => _spendPoints(100),
+                  //   child: const Text('포인트 소모'),
+                  // ),
                 ],
               ),
             );

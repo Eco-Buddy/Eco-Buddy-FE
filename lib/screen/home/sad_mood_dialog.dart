@@ -1,12 +1,16 @@
-import 'dart:convert'; // Add this line for jsonDecode
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class SadMoodDialog extends StatelessWidget {
-  final Function onQuizSelected;
   final Function onCoinSelected;
+  final Function onMissionSelected; // 미션 수행 콜백
 
-  const SadMoodDialog({required this.onQuizSelected, required this.onCoinSelected, Key? key}) : super(key: key);
+  const SadMoodDialog({
+    required this.onCoinSelected,
+    required this.onMissionSelected, // 콜백 받기
+    Key? key,
+  }) : super(key: key);
 
   Future<Map<String, dynamic>> _getCoinData() async {
     final secureStorage = FlutterSecureStorage();
@@ -25,7 +29,7 @@ class SadMoodDialog extends StatelessWidget {
     final totalCarbon = double.tryParse(totalCarbonString) ?? 0.0;
     final discount = double.tryParse(discountString) ?? 0.0;
     final userCoins = petData['points'] ?? 0; // `points` 값 가져오기
-    int tmp = 100;
+    int tmp = 10000;
     final coinCost = ((totalCarbon - discount) / tmp).floor() * 100;
 
     return {'coinCost': coinCost, 'userCoins': userCoins};
@@ -42,7 +46,6 @@ class SadMoodDialog extends StatelessWidget {
 
         final coinCost = snapshot.data?['coinCost'] ?? 0;
         final userCoins = snapshot.data?['userCoins'] ?? 0;
-        print('$coinCost | $userCoins');
         final isAffordable = userCoins >= coinCost;
 
         return Dialog(
@@ -81,7 +84,10 @@ class SadMoodDialog extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     OutlinedButton(
-                      onPressed: () => Navigator.of(context).pop(),
+                      onPressed: () {
+                        onMissionSelected(); // 미션 수행 콜백 호출
+                        Navigator.of(context).pop(); // 다이얼로그 닫기
+                      },
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(color: Colors.grey),
                         shape: RoundedRectangleBorder(
