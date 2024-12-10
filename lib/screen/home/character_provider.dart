@@ -51,7 +51,8 @@ class CharacterProvider with ChangeNotifier {
     print("$carbonTotalString | $discountString");
     if (carbonTotalString != null && discountString != null) {
       final result = double.parse(carbonTotalString) - double.parse(discountString);
-      if (result > 10000) {
+      int tmp = 100;
+      if (result > tmp) {
         updateEmotion('sad');
       } else {
         updateEmotion('normal');
@@ -140,6 +141,4 @@ class CharacterProvider with ChangeNotifier {
     character.currentImage = _getStaticImageForEmotion(character.emotion);
     notifyListeners();
   }
-
-
 }

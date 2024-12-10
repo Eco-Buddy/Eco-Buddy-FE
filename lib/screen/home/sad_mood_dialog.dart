@@ -25,8 +25,8 @@ class SadMoodDialog extends StatelessWidget {
     final totalCarbon = double.tryParse(totalCarbonString) ?? 0.0;
     final discount = double.tryParse(discountString) ?? 0.0;
     final userCoins = petData['points'] ?? 0; // `points` 값 가져오기
-
-    final coinCost = ((totalCarbon - discount) / 10000).floor() * 100;
+    int tmp = 100;
+    final coinCost = ((totalCarbon - discount) / tmp).floor() * 100;
 
     return {'coinCost': coinCost, 'userCoins': userCoins};
   }
