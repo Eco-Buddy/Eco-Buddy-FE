@@ -114,7 +114,7 @@ class _MenuPageState extends State<MenuPage> {
 
       deleteExceptSpecificKeys();
       print('🔑 Secure storage cleared.');
-      printAllSecureStorage();
+      //printAllSecureStorage();
       if (Platform.isAndroid && _androidWebViewController != null) {
         await _androidWebViewController!.clearCache();
         print('✅ Android WebView cache cleared.');

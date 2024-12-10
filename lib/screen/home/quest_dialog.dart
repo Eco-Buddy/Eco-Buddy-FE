@@ -41,23 +41,30 @@ class _QuestDialogState extends State<QuestDialog> {
     await _storage.write(key: 'points', value: newPoints.toString());
   }
 
-  void _checkAnswer(String selectedHint) {
-    if (_currentQuest != null) {
-      setState(() {
-        _isCorrect = selectedHint == _currentQuest!['answer'];
-        _showResult = true;
+  void _checkAnswer(String selectedHint) async {
+    if (_currentQuest == null) return;
 
-        final petProvider = Provider.of<PetProvider>(context, listen: false);
-        final int reward = _isCorrect ? 1000 : 100;
-        final int updatedPoints = petProvider.petPoints + reward;
-        petProvider.updatePetPoints(updatedPoints);
+    final petProvider = Provider.of<PetProvider>(context, listen: false);
 
-        _updatePointsInStorage(updatedPoints);
+    setState(() {
+      _isCorrect = selectedHint == _currentQuest!['answer'];
+      _showResult = true;
+    });
 
-        print(_isCorrect
-            ? '정답입니다! +1000 포인트'
-            : '오답입니다... +100 포인트');
-      });
+    try {
+      final int reward = _isCorrect ? 1000 : 100;
+      final int updatedPoints = petProvider.petPoints + reward;
+
+      // 포인트 업데이트는 직렬화
+      await petProvider.updatePetPoints(updatedPoints);
+
+      // 미션 차감도 직렬화
+      await petProvider.updatePetMission();
+
+      print(_isCorrect ? '정답입니다! +1000 포인트' : '오답입니다... +100 포인트');
+      print('남은 미션 수 업데이트 완료: ${petProvider.pet.mission}');
+    } catch (e) {
+      print('Error during _checkAnswer: $e');
     }
   }
 
@@ -76,21 +83,41 @@ class _QuestDialogState extends State<QuestDialog> {
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Text(
-              '남은 미션 수: ${petProvider.pet.mission}',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue,
-              ),
-              textAlign: TextAlign.center,
+            child: Column(
+              children: [
+                Text(
+                  '남은 미션 수: ${petProvider.pet.mission}',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                if (petProvider.pet.mission == 0)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Text(
+                      '오늘 미션을 다 완수하셨습니다!',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+              ],
             ),
           ),
-          !_showResult ? _buildQuestionContent() : _buildResultContent(),
+          // 문제를 미션 수가 0이 아닐 때만 보여줌
+          if (petProvider.pet.mission > 0)
+            !_showResult ? _buildQuestionContent() : _buildResultContent(),
         ],
       ),
     );
   }
+
 
   Widget _buildQuestionContent() {
     return Container(

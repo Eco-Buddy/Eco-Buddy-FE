@@ -25,10 +25,31 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
+    _initializeWebView();
+  }
+
+  Future<void> _initializeWebView() async {
     if (Platform.isAndroid) {
       _initializeAndroidWebView();
     } else if (Platform.isWindows) {
-      _initializeWindowsWebView();
+      await _initializeWindowsWebView();
+    }
+    await _clearWebViewCookies();
+  }
+
+  Future<void> _clearWebViewCookies() async {
+    if (Platform.isAndroid) {
+      // Android WebView 쿠키 초기화
+      await WebViewCookieManager().clearCookies();
+      print("✅ Android WebView 쿠키 초기화 완료");
+    } else if (Platform.isWindows && _windowsWebViewController != null) {
+      // Windows WebView 쿠키 초기화
+      try {
+        await _windowsWebViewController!.clearCookies();
+        print("✅ Windows WebView 쿠키 초기화 완료");
+      } catch (e) {
+        print("❌ Windows WebView 쿠키 초기화 중 오류 발생: $e");
+      }
     }
   }
 

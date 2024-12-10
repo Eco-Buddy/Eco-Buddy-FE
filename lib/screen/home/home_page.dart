@@ -233,8 +233,10 @@ class _HomePageState extends State<HomePage> {
             top: 30,
             left: 16,
             right: 16,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              spacing: 8.0, // 아이템 간의 가로 간격
+              runSpacing: 8.0, // 아이템 간의 세로 간격
               children: [
                 _buildUserProfile(petProvider.petName, _profileImage),
                 Consumer<PetProvider>(
@@ -531,71 +533,61 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildUserProfile(String petName, String profileImage) {
-    return Container(
-      decoration: _buildInfoBoxDecoration(),
-      padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: const Color(0xFFA57C50),
-            backgroundImage: profileImage.startsWith('http')
-                ? NetworkImage(profileImage) as ImageProvider
-                : const AssetImage('assets/images/profile/default.png'),
-          ),
-          const SizedBox(width: 8.0),
-          Text(
-            petName,
-            style: const TextStyle(
-              color: Colors.black,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
+    return IntrinsicWidth(
+      child: Container(
+        decoration: _buildInfoBoxDecoration(),
+        padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: const Color(0xFFA57C50),
+              backgroundImage: profileImage.startsWith('http')
+                  ? NetworkImage(profileImage) as ImageProvider
+                  : const AssetImage('assets/images/profile/default.png'),
             ),
-          ),
-        ],
+            const SizedBox(width: 8.0),
+            Text(
+              petName,
+              style: const TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildTokenInfo(int points) {
-    return Consumer<PetProvider>(
-      builder: (context, petProvider, child) {
-        return GestureDetector(
-          onTap: () async {
-            // 토큰 아이콘 클릭 시 printAllSecureStorage() 호출
-            await petProvider.printAllSecureStorage();
-            // 필요 시 알림창 표시
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('SecureStorage 내용이 콘솔에 출력되었습니다.')),
-            );
-          },
-          child: Container(
-            decoration: _buildInfoBoxDecoration(),
-            padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: Colors.transparent,
-                  backgroundImage:
-                  const AssetImage('assets/images/icon/leaf_token.png'),
-                ),
-                const SizedBox(width: 8.0),
-                Text(
-                  points.toString(),
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ],
+    return IntrinsicWidth(
+      child: Container(
+        decoration: _buildInfoBoxDecoration(),
+        padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: Colors.transparent,
+              backgroundImage: const AssetImage('assets/images/icon/leaf_token.png'),
             ),
-          ),
-        );
-      },
+            const SizedBox(width: 8.0),
+            Text(
+              points.toString(),
+              style: const TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
+
 
   Widget _buildIconButton(String iconPath, {required VoidCallback onTap}) {
     return GestureDetector(

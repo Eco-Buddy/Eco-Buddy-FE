@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter/services.dart';
 
 import '../stats/kotlin_tokenmanager.dart'; // For HTTP requests
 
@@ -130,71 +131,101 @@ class _NewbiePageState extends State<NewbiePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // 꽃 캐릭터 이미지
-              Image.asset(
-                'assets/images/character/happy.png', // 이미지 파일 경로
-                height: 150,
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                '환영합니다!\n당신과 함께할 펫의 이름을 정해주세요.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+    return WillPopScope(
+      onWillPop: () async {
+        // 뒤로 가기 시 다이얼로그 표시
+        final shouldExit = await showDialog<bool>(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text('종료 확인'),
+              content: const Text('앱을 종료하시겠습니까?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false), // 아니오
+                  child: const Text('아니오'),
                 ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  // 이름 입력 필드
-                  Expanded(
-                    child: TextField(
-                      controller: _petNameController,
-                      decoration: InputDecoration(
-                        hintText: '이름',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                        filled: true,
-                        fillColor: const Color(0xFFFFF5E1), // 배경색
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  // 화살표 버튼
-                  ElevatedButton(
-                    onPressed: _createPet,
-                    style: ElevatedButton.styleFrom(
-                      shape: const CircleBorder(),
-                      padding: const EdgeInsets.all(16),
-                      backgroundColor: _isNameEntered
-                          ? const Color(0xFF4CAF50) // 진한 초록색
-                          : const Color(0xFFB6E3A8), // 연한 초록색
-                    ),
-                    child: const Icon(Icons.arrow_forward, color: Colors.white),
-                  ),
-                ],
-              ),
-              // 에러 메시지
-              if (_errorMessage != null) ...[
-                const SizedBox(height: 10),
-                Text(
-                  _errorMessage!,
-                  style: const TextStyle(
-                    color: Colors.red,
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(true); // 예
+                  },
+                  child: const Text('예'),
+                ),
+              ],
+            );
+          },
+        );
+        if (shouldExit ?? false) {
+          SystemNavigator.pop(); // 앱 종료
+        }
+        return false; // 종료를 진행하지 않음
+      },
+      child: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // 꽃 캐릭터 이미지
+                Image.asset(
+                  'assets/images/character/happy.png', // 이미지 파일 경로
+                  height: 150,
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  '환영합니다!\n당신과 함께할 펫의 이름을 정해주세요.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    // 이름 입력 필드
+                    Expanded(
+                      child: TextField(
+                        controller: _petNameController,
+                        decoration: InputDecoration(
+                          hintText: '이름',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8.0),
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFFFFF5E1), // 배경색
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    // 화살표 버튼
+                    ElevatedButton(
+                      onPressed: _createPet,
+                      style: ElevatedButton.styleFrom(
+                        shape: const CircleBorder(),
+                        padding: const EdgeInsets.all(16),
+                        backgroundColor: _isNameEntered
+                            ? const Color(0xFF4CAF50) // 진한 초록색
+                            : const Color(0xFFB6E3A8), // 연한 초록색
+                      ),
+                      child: const Icon(Icons.arrow_forward, color: Colors.white),
+                    ),
+                  ],
+                ),
+                // 에러 메시지
+                if (_errorMessage != null) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    _errorMessage!,
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

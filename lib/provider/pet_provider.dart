@@ -97,7 +97,47 @@ class PetProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updatePetMission() async {
+    final accessToken = await secureStorage.read(key: 'accessToken') ?? '';
+    final deviceId = await secureStorage.read(key: 'deviceId') ?? '';
+    final userId = await secureStorage.read(key: 'userId') ?? '';
 
+    if (accessToken.isEmpty || deviceId.isEmpty || userId.isEmpty) {
+      print('❌ 인증 정보가 부족합니다.');
+      return;
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://ecobuddy.kro.kr:4525/pet/mission'),
+        headers: {
+          'authorization': accessToken,
+          'deviceId': deviceId,
+          'userId': userId,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        // 서버에서 받은 새로운 accessToken 저장
+        await secureStorage.write(
+          key: 'accessToken',
+          value: responseData['new_accessToken'],
+        );
+
+        // 로컬 pet 데이터 갱신
+        _pet.mission--;
+        notifyListeners();
+      } else if (response.statusCode == 401) {
+        // 인증 오류 처리
+        await handleUnauthorizedError();
+      } else {
+        print('❌ 미션 수 서버 업데이트 실패: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ 미션 수 업데이트 중 오류 발생: $e');
+    }
+  }
 
   Future<void> handleUnauthorizedError() async {
     // 알림 창 띄우기

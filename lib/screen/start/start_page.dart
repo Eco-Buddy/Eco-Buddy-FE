@@ -103,6 +103,7 @@ class _StartPageState extends State<StartPage> {
       checkMembership();
     } else {
       print('🔒로그인 정보가 없습니다. 로그인 페이지로 이동합니다.');
+
       Navigator.pushReplacementNamed(context, '/login');
     }
   }
