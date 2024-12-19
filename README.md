@@ -56,37 +56,6 @@
   실시간으로 디지털 탄소 배출량을 추적하고 이것을 탄소 발자국으로 계산해서 시각적으로 제공
   오늘 하루 동안 사용한 디지털 탄소 발자국을 사용자에게 보여준다.  
   안드로이드는 셀룰러 데이터, 와이파이로 계산 했고 윈도우는 이더넷, 와이파이 사용량으로 계산했다.
-  일주일 간 하루<details>
-  <summary><b>로그인 화면</b></summary>
-  <br />
-  <blockquote>
-    로그인 화면
-  </blockquote>
-  <br />
-  <p align="center">
-    <img src="https://github.com/user-attachments/assets/c815470e-855a-4dd7-b290-a78ae5693b9f" alt="로그인1" height="400">
-    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-    <img src="https://github.com/user-attachments/assets/cee8f385-8943-45c9-944c-63ff7bdaf758" alt="로그인2" height="400">
-  </p>
-  
-  사용자가 앱을 처음 실행하면 카카오 혹은 네이버를 통해 로그인 할 수 있다. 이후에 로그인을 시도 하면 다음 번에 앱에 접속 할 때 자동   으로 로그인이 된다.
-</details>
-<br />
-
-<details>
-  <summary><b>디지털 탄소 배출량 모니터링</b></summary>
-  <br />
-  <blockquote>
-    통계 화면
-  </blockquote>
-  <br />
-  <p align="center">
-    <img src="https://github.com/user-attachments/assets/31fbdef8-6ac3-43ba-90d7-4ab7e8ecbb01" alt="통계1" height="400">
-  </p>
-  
-  실시간으로 디지털 탄소 배출량을 추적하고 이것을 탄소 발자국으로 계산해서 시각적으로 제공
-  오늘 하루 동안 사용한 디지털 탄소 발자국을 사용자에게 보여준다.  
-  안드로이드는 셀룰러 데이터, 와이파이로 계산 했고 윈도우는 이더넷, 와이파이 사용량으로 계산했다.
   일주일 간 하루 동안 발생한 데이터 사용량을 테이블로 보여준다.  
   시간별로 얼마나 데이터를 사용했는지 그래프를 이용해서 보여준다.
   <br />
