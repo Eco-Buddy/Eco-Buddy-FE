@@ -6,7 +6,7 @@
 
 일상 속 디지털 기기 사용에 따른 디지털 탄소 발생량은 통상적으로 데이터 1MB 사용은 11g, 와이파이 1MB 사용은 8.6g 이다.
 <br />
-<br />  
+
 ## 📖 프로젝트 소개
 **EcoBuddy** 점점 더 디지털화되는 세상에서 디지털 탄소 중립을 촉진하기 위한 도구입니다.
 
@@ -21,7 +21,7 @@
 - 표와 그래프를 이용해서 증감량을 한 눈에 알아볼 수 있음.
 - 다른 플렛폼에서 사용한 데이터 사용량 제공
 <br /> 
-<br />  
+
 ## 🖥 주요 기능
 
 <details>
@@ -39,6 +39,7 @@
   
   사용자가 앱을 처음 실행하면 카카오 혹은 네이버를 통해 로그인 할 수 있다. 이후 한번 로그인을 시도 하면 다음 번에 앱에 접속 할 때 자동   으로 로그인이 된다.
 </details>
+<br />
 
 <details>
   <summary><b>디지털 탄소 배출량 모니터링</b></summary>
@@ -57,6 +58,7 @@
   일주일 간 하룻동안 발생한 데이터 사용량을 테이블로 보여준다.  
   시간별로 얼마나 데이터를 사용했는지 그래프를 이용해서 보여준다.
 </details>
+<br />
 
 <details>
   <summary><b>환경 팁</b></summary>
@@ -71,6 +73,7 @@
   사람들에게 디지털 탄소 발자국에 대한 다양한 정보를 제공해 준다.
   디지털 탄소 발자국이 무엇인지, 어떻게 줄일 수 있는 지에 대한 정보를 얻을 수 있다.
 </details>
+<br />
 
 <details>
   <summary><b>캐릭터 육성 요소</b></summary>
@@ -95,13 +98,15 @@
   
   그외에도 캐릭터를 클릭하면 살짝 웃는 기능과 일정 시간 마다 돌아다니는 기능 등 디테일적 요소를 넣었다.
 </details>
+<br />
 
 ## 👨🏻‍💻 팀원 소개
 <p align="center">
   <img src="https://github.com/user-attachments/assets/958b08f9-c3ff-4a8b-838b-3fb0e73cbdbf" alt="팀원" height="400">
 </p>
+<br />
 
 ## 🛠️ 기술 스택
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/004d75ac-2ea4-4979-b29b-7c8b196661f6" alt="기술 스택" height="400">
+  <img src="https://github.com/user-attachments/assets/004d75ac-2ea4-4979-b29b-7c8b196661f6" alt="기술 스택" height="300">
 </p>
