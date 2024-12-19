@@ -128,6 +128,7 @@
   <blockquote>
     윈도우 버전
   </blockquote>
+  
   영상을 보려면 [Window](https://youtu.be/pWvLRgoUIC8?si=chBp9lhsnPXh4MNj) 클릭
   <br />
   <br />
