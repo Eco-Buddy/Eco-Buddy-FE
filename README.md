@@ -43,6 +43,21 @@
 <br />
 
 <details>
+  <summary><b>첫 시작 화면</b></summary>
+  <br />
+  <blockquote>
+    첫 시작 화면
+  </blockquote>
+  <br />
+  <p align="center">
+    <img src="https://github.com/user-attachments/assets/b91dc339-6f2d-42a3-9168-48a49dafa7e9" alt="시작화면" height="400">
+  </p>
+  
+  사용자가 앱을 처음 사용한다면 로그인 후에 펫 이름을 지정하는 곳으로 넘어가게 된다.
+</details>
+<br />
+
+<details>
   <summary><b>디지털 탄소 배출량 모니터링</b></summary>
   <br />
   <blockquote>
@@ -51,6 +66,8 @@
   <br />
   <p align="center">
     <img src="https://github.com/user-attachments/assets/31fbdef8-6ac3-43ba-90d7-4ab7e8ecbb01" alt="통계1" height="400">
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    <img src="https://github.com/user-attachments/assets/a84990f9-7862-46eb-8836-54b19dbad51e" alt="통계2" height="400">
   </p>
   
   실시간으로 디지털 탄소 배출량을 추적하고 이것을 탄소 발자국으로 계산해서 시각적으로 제공
