@@ -122,9 +122,26 @@
 </details>
 <br />
 
+<details>
+  <summary><b>Eco_Buddy Window</b></summary>
+  <br />
+  <blockquote>
+    윈도우 버전
+  </blockquote>
+  영상을 보려면 [Window](https://youtu.be/pWvLRgoUIC8?si=chBp9lhsnPXh4MNj) 클릭
+  <br />
+  <br />
+  
+  <b>안드로이드와 다른 점</b>
+  
+  - 안드로이드와 다르게 실시간 측정 (이전 값을 가져올 수 없다)
+  - 백그라운드에서 작동 (트레이로 작동을 숨김)
+</details>
+<br />
+
 ## 👨🏻‍💻 팀원 소개
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/958b08f9-c3ff-4a8b-838b-3fb0e73cbdbf" alt="팀원" height="400">
+  <img src="https://github.com/user-attachments/assets/958b08f9-c3ff-4a8b-838b-3fb0e73cbdbf" alt="팀원" height="350">
 </p>
 <br />
 
