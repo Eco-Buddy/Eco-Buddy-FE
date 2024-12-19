@@ -23,6 +23,12 @@
   <blockquote>
     로그인 화면
   </blockquote>
+  <br />
+  <p align="center">
+    <img src="https://github.com/user-attachments/assets/c815470e-855a-4dd7-b290-a78ae5693b9f" alt="로그인1" height="400">
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    <img src="https://github.com/user-attachments/assets/cee8f385-8943-45c9-944c-63ff7bdaf758" alt="로그인2" height="400">
+  </p>
   
   사용자가 앱을 처음 실행하면 카카오 혹은 네이버를 통해 로그인 할 수 있다. 이후 한번 로그인을 시도 하면 다음 번에 앱에 접속 할 때 자동   으로 로그인이 된다.
 </details>
