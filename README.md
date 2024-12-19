@@ -1,4 +1,5 @@
 # :leaves: EcoBuddy (에코버디)
+<img src="https://github.com/user-attachments/assets/b46958bf-f965-4af4-b53f-662e7b100477" alt="에코버디로고">
 
 ## 디지털 탄소 발자국이란?
 
